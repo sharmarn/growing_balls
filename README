@@ -1,0 +1,6 @@
+clone with --recursive to correctly init the submodules
+If you did not clone with -recursive:
+git submodule init
+git submodule update
+git submodule foreach git submodule init
+git submodule foreach git submodule update
