@@ -15,9 +15,10 @@
 #include <CGAL/point_generators_3.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 
-#include <libdts2/Constrained_delaunay_triangulation_s2.h>
+#include <libdts2/Delaunay_triangulation_s2.h>
 #include <libratss/GeoCoord.h>
 #include <libratss/SphericalCoord.h>
+#include <libratss/ProjectS2.h>
 
 //use the ExploredMap instead of std::map in Worker::exploreRadius
 // #define EXP_RAD_USE_MAP
@@ -44,7 +45,7 @@ using ratss::SphericalCoord;
 namespace { //protection namespace
 
 using NodeID = int64_t;
-using CDT = dts2::Constrained_Delaunay_triangulation_no_intersections_with_info_s2<NodeID, void>;
+using CDT = dts2::Delaunay_triangulation_with_info_s2<NodeID, void>;
 using Vertex = CDT::Vertex;
 using Vertex_handle = CDT::Vertex_handle;
 using Vertex_circulator= CDT::Vertex_circulator;
@@ -523,7 +524,7 @@ getRandomPolarPoints(uint number_of_points) {
 	using Rand = CGAL::Random_points_on_sphere_3<K::Point_3>;
 	
 	Rand rnd(1.0);
-	ratss::Projector proj;
+	ratss::ProjectS2 proj;
 	
 	std::cout << std::endl;
 	for (; points.size() < number_of_points;) {
@@ -1815,5 +1816,6 @@ main(int argc, char* argv[]) {
 	std::cout << "Explored-map mean fill: " << (ExploredVector::summedFill/ExploredVector::clearCount) + 1 << std::endl;
 	std::cout << "Explored-map seek cost: " << ExploredVector::seekCost << std::endl;
 	#endif
+	
 	return 0;
 }

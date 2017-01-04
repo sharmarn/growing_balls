@@ -33,7 +33,8 @@ set(GBS_ON_S2_SOURCES_CPP
 	src/gbons2.cpp
 )
 
-add_executable(gbons2 ${GBS_ON_S2_SOURCES_CPP})
-target_link_libraries(gbons2 ${MY_LIB_LINK_LIBS})
-add_dependencies(gbons2 dts2)
+add_executable(${PROJECT_NAME} ${GBS_ON_S2_SOURCES_CPP})
+target_link_libraries(${PROJECT_NAME} ${MY_LIB_LINK_LIBS})
+add_dependencies(${PROJECT_NAME} dts2)
+target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBDTS2_COMPILE_DEFINITIONS})
 
