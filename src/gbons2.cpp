@@ -23,6 +23,11 @@
 // #define EXP_RAD_USE_MAP
 //#define DEBUG
 //#define CGAL_DEBUG
+// #define GATHER_EXP_STATS
+
+#ifdef GATHER_EXP_STATS
+	#undef EXP_RAD_USE_MAP
+#endif
 
 //data items do not have their own id, instead the priority is used as a data-id
 
@@ -181,7 +186,10 @@ private: //external data (keeping these in a state object would be better)
 class ExploredVector {
 protected:
 	bool contains(std::vector<int>::const_iterator it, const std::vector<int>::const_iterator & end, int id) const {
-		for(; it != end; ++it) {
+		for(; it < end; ++it) {
+			#ifdef GATHER_EXP_STATS
+			++seekCost;
+			#endif
 			//early termination is faster than trying to improve branches here by reading cacheline-size many items at once
 			if (*it == id) {
 				return true;
@@ -198,13 +206,33 @@ public:
 		m_d.emplace_back(id);
 	}
 	void clear() {
+#ifdef GATHER_EXP_STATS
+		maxFill = std::max<std::size_t>(maxFill, m_d.size());
+		++clearCount;
+		summedFill += m_d.size();
+		
+#endif
 		m_d.clear();
 	}
 protected:
 	const std::vector<int> & d() const { return m_d; }
 protected:
 	std::vector<int> m_d;
+#ifdef GATHER_EXP_STATS
+public:
+	static std::size_t maxFill;
+	static std::size_t clearCount;
+	static std::size_t summedFill;
+	static std::size_t seekCost;
+#endif
 };
+
+#ifdef GATHER_EXP_STATS
+std::size_t ExploredVector::maxFill = 0;
+std::size_t ExploredVector::clearCount = 0;
+std::size_t ExploredVector::summedFill = 0;
+std::size_t ExploredVector::seekCost = 0;
+#endif
 
 class ExploredVectorWithStartOffset: public ExploredVector {
 public:
@@ -237,20 +265,24 @@ public:
 		clear();
 	}
 	bool count(int id) const {
-		uint8_t bf = id & 0xFF;
+		uint8_t bf = calcBf(id);
 		if ( (m_bf[bf/8] >> (bf % 8)) & 0x1 ){
-			return count(id);
+			return m_d.count(id);
 		}
 		return false;
 	}
 	void insert(int id) {
-		uint8_t bf = id & 0xFF;
+		uint8_t bf = calcBf(id);
 		m_bf[bf/8] |= static_cast<uint8_t>(1) << (bf % 8);
 		m_d.insert(id);
 	}
 	void clear() {
 		m_d.clear();
 		::memset(m_bf, 0, 256/8);
+	}
+private:
+	inline uint8_t calcBf(int id) const {
+		return (id >> 8) & 0xFF;
 	}
 private:
 	BaseMap m_d;
@@ -261,10 +293,12 @@ private:
 	uint8_t m_bf[256/8];
 };
 
+// using ExploredMap = ExploredVectorWithStartOffset;
 // using ExploredMap = BloomFilteredMap< std::set<int> >;
 // using ExploredMap = BloomFilteredMap< ExploredVector >;
+using ExploredMap = BloomFilteredMap< ExploredVectorWithStartOffset >;
 // using ExploredMap = std::set<int>;
-using ExploredMap = ExploredVector;
+// using ExploredMap = ExploredVector;
 
 struct Config {
 	enum OutFormats {
@@ -1776,5 +1810,10 @@ main(int argc, char* argv[]) {
 		return -1;
 	}
 
+	#ifdef GATHER_EXP_STATS
+	std::cout << "Explored-map max fill: " << ExploredVector::maxFill << std::endl;
+	std::cout << "Explored-map mean fill: " << (ExploredVector::summedFill/ExploredVector::clearCount) + 1 << std::endl;
+	std::cout << "Explored-map seek cost: " << ExploredVector::seekCost << std::endl;
+	#endif
 	return 0;
 }
