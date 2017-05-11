@@ -988,7 +988,7 @@ const PointInfo& Worker::getPointInfo(int id) const {
 }
 
 PointInfo& Worker::getPointInfo(const Vertex_handle& _vh) {
-	assert(pointInfo.at(_vh->info()).id = _vh->info());
+	assert(pointInfo.at(_vh->info()).id == _vh->info());
 	return getPointInfo(_vh->info());
 }
 
@@ -1819,3 +1819,4 @@ main(int argc, char* argv[]) {
 	
 	return 0;
 }
+
