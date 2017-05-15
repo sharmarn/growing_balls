@@ -8,6 +8,11 @@ find_package(CGAL REQUIRED Core)
 add_subdirectory(vendor/libdts2 libdts2)
 
 include_directories(
+    src/
+    src/algorithms/
+    src/geofunctions/
+    src/input/
+    src/storage/
 	${LIBDTS2_INCLUDE_DIR}
 )
 
@@ -34,7 +39,18 @@ set(GBS_ON_S2_SOURCES_CPP
 )
 
 add_executable(${PROJECT_NAME} ${GBS_ON_S2_SOURCES_CPP})
+
+set(GROWING_BALLS_SOURCES
+    #src/geofunctions/geofunctions.h
+    #src/storage/datastorage.h
+)
+
+add_executable(growing_balls src/growing_balls.cpp)# ${GROWING_BALLS_SOURCES})
+
 target_link_libraries(${PROJECT_NAME} ${MY_LIB_LINK_LIBS})
 add_dependencies(${PROJECT_NAME} dts2)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBDTS2_COMPILE_DEFINITIONS})
 
+target_link_libraries(growing_balls ${MY_LIB_LINK_LIBS})
+add_dependencies(growing_balls dts2)
+target_compile_definitions(growing_balls PUBLIC ${LIBDTS2_COMPILE_DEFINITIONS})
