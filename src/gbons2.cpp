@@ -257,7 +257,7 @@ protected:
 	uint8_t m_st[256];
 };
 
-template<typename T_BASE>
+template<typename T_BASE, int T_SHIFT>
 class BloomFilteredMap {
 public:
 	using BaseMap = T_BASE;
@@ -283,7 +283,7 @@ public:
 	}
 private:
 	inline uint8_t calcBf(int id) const {
-		return (id >> 8) & 0xFF;
+		return (id >> T_SHIFT) & 0xFF;
 	}
 private:
 	BaseMap m_d;
@@ -297,7 +297,11 @@ private:
 // using ExploredMap = ExploredVectorWithStartOffset;
 // using ExploredMap = BloomFilteredMap< std::set<int> >;
 // using ExploredMap = BloomFilteredMap< ExploredVector >;
-using ExploredMap = BloomFilteredMap< ExploredVectorWithStartOffset >;
+using ExploredMap = BloomFilteredMap<ExploredVectorWithStartOffset, 8>;
+// using ExploredMap = BloomFilteredMap<BloomFilteredMap<ExploredVectorWithStartOffset, 8>, 12>;
+// using ExploredMap = BloomFilteredMap<BloomFilteredMap<BloomFilteredMap<ExploredVectorWithStartOffset, 4>, 8>, 12>;
+// using ExploredMap = BloomFilteredMap<BloomFilteredMap<BloomFilteredMap<BloomFilteredMap<ExploredVectorWithStartOffset, 4>, 8>, 12>, 16>;
+
 // using ExploredMap = std::set<int>;
 // using ExploredMap = ExploredVector;
 
@@ -1815,6 +1819,7 @@ main(int argc, char* argv[]) {
 	std::cout << "Explored-map max fill: " << ExploredVector::maxFill << std::endl;
 	std::cout << "Explored-map mean fill: " << (ExploredVector::summedFill/ExploredVector::clearCount) + 1 << std::endl;
 	std::cout << "Explored-map seek cost: " << ExploredVector::seekCost << std::endl;
+	std::cout << "Explored-map mean seek cost: " << (ExploredVector::seekCost/ExploredVector::clearCount) + 1 << std::endl;
 	#endif
 	
 	return 0;
