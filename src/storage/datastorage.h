@@ -84,7 +84,7 @@ public:
 
     friend class DataStorage;
   };
-  
+
   /**
    * Ids 0-5 are reserved:
    * 0      : UNDEFINED_ID
@@ -116,7 +116,7 @@ public:
 
   void insert( typename std::vector<Element>::iterator begin,
                typename std::vector<Element>::iterator end);
-  
+
   /**
    * The neighborhood visitor is applied for each neighbor of the specified
    * element.
@@ -127,7 +127,7 @@ public:
   void visit_with_aux(const VertexCirculator& begin,
                       const VertexCirculator& current,
                       const VertexCirculator& end, ElementId query, Visitor& v);
-  
+
   /**
    * The neighborhood visitor is applied for each neighbor of the specified
    * element.
