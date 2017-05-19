@@ -76,7 +76,7 @@ public:
     Dimension_1 get_coord_1() const { return m_dim1; };
     Dimension_2 get_coord_2() const { return m_dim2; };
     InfoType get_info() const { return m_info; };
-    
+
     ElementId get_id() const { return m_id; };
 
   protected:
@@ -91,55 +91,93 @@ public:
    *
    * It is guaranteed that one of these neighbors is the nearest neighbor.
    */
-  template<typename Visitor>
-  void neighborhood(ElementId elem_id, Visitor& v) {
-    auto& elem = m_elements.at(ElementIdFactory::get_vpos_from_id(elem_id));
-    
-    std::unordered_set<ElementId> visited;
-    
-    VertexCirculator vc = m_cdt.incident_vertices(elem.get_handle());
-    auto end = vc;
+  template <typename Visitor>
+  void visit_with_aux(const VertexCirculator& begin,
+                      const VertexCirculator& current,
+                      const VertexCirculator& end, ElementId query, Visitor& v)
+  {
+    VertexCirculator it = begin;
+
+    // add the elements that were already visited to skip
+    std::unordered_set<ElementId> skip;
+    skip.insert(query);
+    while (it != current) {
+      assert(!m_cdt.is_auxiliary(it));
+      skip.insert(it->info());
+
+      ++it;
+    }
+
+    // now it == current and should be the first aux point in the Circulator
+    assert(it == current && m_cdt.is_auxiliary(it));
     do {
-      if (!m_cdt.is_auxiliary(vc)) {
-        ElementId id = vc->info();
-        visited.insert(id);
+      if (!m_cdt.is_auxiliary(it)) {
+        ElementId id = it->info();
+        skip.insert(id);
         v(m_elements.at(ElementIdFactory::get_vpos_from_id(id)));
       } else {
         // recursively cycle through the neighbors of the aux point to avoid
         // breaking the guarantee that the real nearest neighbor is visited
-        VertexCirculator vc2 = m_cdt.incident_vertices(vc);
-        auto end2 = vc2;
+        VertexCirculator it2 = m_cdt.incident_vertices(it);
+        auto end2 = it2;
         do {
-          if (!m_cdt.is_auxiliary(vc2)) {
-            ElementId id2 = vc2->info();
-            if (visited.find(id2) == visited.end()) {
-              visited.insert(id2);
+          if (!m_cdt.is_auxiliary(it2)) {
+            ElementId id2 = it2->info();
+            if (skip.find(id2) == skip.end()) {
+              skip.insert(id2);
               v(m_elements.at(ElementIdFactory::get_vpos_from_id(id2)));
             }
           } else {
             // ... and once again to ensure we jumped over the triangle at the
             // north pole
-            VertexCirculator vc3 = m_cdt.incident_vertices(vc2);
-            auto end3 = vc3;
+            VertexCirculator it3 = m_cdt.incident_vertices(it2);
+            auto end3 = it3;
             do {
-              if (!m_cdt.is_auxiliary(vc3)) {
-                ElementId id3 = vc3->info();
-                visited.insert(id3);
-                if (visited.find(id3) == visited.end()) {
+              if (!m_cdt.is_auxiliary(it3)) {
+                ElementId id3 = it3->info();
+                skip.insert(id3);
+                if (skip.find(id3) == skip.end()) {
                   v(m_elements.at(ElementIdFactory::get_vpos_from_id(id3)));
                 }
               }
-              ++vc3;
-            } while (vc3 != end3);
+              ++it3;
+            } while (it3 != end3);
           }
-          ++vc2;
-        } while (vc2 != end2);
+          ++it2;
+        } while (it2 != end2);
       }
-      
+
+      ++it;
+    } while (it != end);
+  }
+
+  /**
+   * The neighborhood visitor is applied for each neighbor of the specified
+   * element.
+   *
+   * It is guaranteed that one of these neighbors is the nearest neighbor.
+   */
+  template <typename Visitor>
+  void neighborhood(ElementId elem_id, Visitor& v)
+  {
+    auto& elem = m_elements.at(ElementIdFactory::get_vpos_from_id(elem_id));
+
+    VertexCirculator begin = m_cdt.incident_vertices(elem.get_handle());
+    VertexCirculator vc = begin;
+    auto end = vc;
+    do {
+      if (m_cdt.is_auxiliary(vc)) {
+        visit_with_aux(begin, vc, end, elem_id, v);
+        break;
+      }
+
+      ElementId id = vc->info();
+      v(m_elements.at(ElementIdFactory::get_vpos_from_id(id)));
+
       ++vc;
     } while (vc != end);
   }
-  
+
   class ElementCirculator
     : public std::iterator<std::forward_iterator_tag, Element>
   {
@@ -151,8 +189,7 @@ public:
 
     iterator& operator++()
     {
-      auto current = 
-      ++m_current;
+      auto current = ++m_current;
       return *this;
     };
 
@@ -160,7 +197,7 @@ public:
     {
       return m_current == other.m_current;
     };
-    
+
     bool operator!=(ElementCirculator other) const
     {
       return !(*this == other);
@@ -196,7 +233,7 @@ public:
       assert(data.size() < std::numeric_limits<uint32_t>::max());
       return data.size() + 5;
     }
-    
+
     static bool is_undefined(ElementId id) { return id == UNDEFINED_ID; };
   };
 
@@ -219,7 +256,7 @@ private:
   std::vector<Element> m_elements;
 
   CDT m_cdt;
-  
+
   ProjectOnSphere m_proj;
 };
 }
@@ -232,29 +269,34 @@ using growing_balls::DataStorage;
 
 struct Helpers
 {
-  
+
   struct SpatialSortingTrait
-  { 
+  {
     using Point_2 = DataStorage::Element;
-    using Less_x_2 = std::function<bool (const DataStorage::Element&, const DataStorage::Element&)>;
-    using Less_y_2 = std::function<bool (const DataStorage::Element&, const DataStorage::Element&)>;
-    
-    
-    Less_x_2 less_x_2_object() const { 
+    using Less_x_2 = std::function<bool(const DataStorage::Element&,
+                                        const DataStorage::Element&)>;
+    using Less_y_2 = std::function<bool(const DataStorage::Element&,
+                                        const DataStorage::Element&)>;
+
+    Less_x_2 less_x_2_object() const
+    {
       auto cmp_d1 = DataStorage::LessDim1();
-      return [cmp_d1](const DataStorage::Element& a, const DataStorage::Element& b) {
-        return cmp_d1(a.get_coord_1(), b.get_coord_1());
-      };
+      return
+        [cmp_d1](const DataStorage::Element& a, const DataStorage::Element& b) {
+          return cmp_d1(a.get_coord_1(), b.get_coord_1());
+        };
     }
-    
-    Less_y_2 less_y_2_object() const {
+
+    Less_y_2 less_y_2_object() const
+    {
       auto cmp_d2 = DataStorage::LessDim2();
-      return [cmp_d2](const DataStorage::Element& a, const DataStorage::Element& b) {
-        return cmp_d2(a.get_coord_2(), b.get_coord_2());
-      };
+      return
+        [cmp_d2](const DataStorage::Element& a, const DataStorage::Element& b) {
+          return cmp_d2(a.get_coord_2(), b.get_coord_2());
+        };
     }
   };
-  
+
   static void spatial_sort(std::vector<DataStorage::Element>::iterator begin,
                            std::vector<DataStorage::Element>::iterator end)
   {
@@ -269,12 +311,15 @@ namespace growing_balls {
 using growing_balls::DataStorage;
 // BEGIN DataStorage
 DataStorage::DataStorage()
-: m_cdt(64), m_proj(m_cdt.geom_traits().project_on_sphere_object()){};
+  : m_cdt(64)
+  , m_proj(m_cdt.geom_traits().project_on_sphere_object()){};
 
 DataStorage::ElementCirculator
-DataStorage::get_neighbors(ElementId id) {
+DataStorage::get_neighbors(ElementId id)
+{
   auto vpos = ElementIdFactory::get_vpos_from_id(id);
-  return ElementCirculator(m_cdt.incident_vertices(m_elements.at(vpos).get_handle()), *this);
+  return ElementCirculator(
+    m_cdt.incident_vertices(m_elements.at(vpos).get_handle()), *this);
 }
 
 DataStorage::ElementId
@@ -282,7 +327,7 @@ DataStorage::insert(Element& elem)
 {
   LocateType lt;
   int32_t li;
-  
+
   Point3 pos = m_cdt.project(elem.get_coord_1(), elem.get_coord_2());
 
   m_cdt.locate(pos, lt, li);
@@ -295,8 +340,9 @@ DataStorage::insert(Element& elem)
   elem.set_id(ElementIdFactory::get_next_id(m_elements));
   elem.set_handle(vh);
   vh->info() = elem.get_id();
-  
-  assert(m_elements.size() == ElementIdFactory::get_vpos_from_id(elem.get_id()));
+
+  assert(m_elements.size() ==
+         ElementIdFactory::get_vpos_from_id(elem.get_id()));
   m_elements.push_back(std::move(elem));
 
   return m_elements.back().get_id();
@@ -326,14 +372,15 @@ DataStorage::insert(std::vector<Element>::iterator begin,
       continue;
     }
     // TODO: use face handle to give a hint to the cdt insertion
-//     auto vh = m_cdt.insert(pos, fh);
+    //     auto vh = m_cdt.insert(pos, fh);
     auto vh = m_cdt.insert(pos);
 
     it->set_id(ElementIdFactory::get_next_id(m_elements));
     it->set_handle(vh);
     vh->info() = it->get_id();
 
-    assert(m_elements.size() == ElementIdFactory::get_vpos_from_id(it->get_id()));
+    assert(m_elements.size() ==
+           ElementIdFactory::get_vpos_from_id(it->get_id()));
 
     m_elements.push_back(std::move(*it));
   }
@@ -354,7 +401,7 @@ DataStorage::remove(ElementId id)
   elem.set_id(ElementIdFactory::UNDEFINED_ID);
   m_cdt.remove(elem.get_handle());
   elem.set_handle(nullptr);
-  
+
   return 1;
 }
 // END DataStorage
@@ -363,13 +410,13 @@ DataStorage::remove(ElementId id)
 DataStorage::Element::Element(Dimension_1 dim1, Dimension_2 dim2, InfoType info)
   : m_dim1(dim1)
   , m_dim2(dim2)
-  , m_info (info)
-  , m_id(ElementIdFactory::UNDEFINED_ID) {};
+  , m_info(info)
+  , m_id(ElementIdFactory::UNDEFINED_ID){};
 
 DataStorage::Element::Element(DataStorage::Element&& other)
   : m_dim1(std::move(other.m_dim1))
   , m_dim2(std::move(other.m_dim2))
-  , m_info (std::move(other.m_info ))
+  , m_info(std::move(other.m_info))
   , m_id(std::move(other.m_id))
   , m_cdt_handle(std::move(other.m_cdt_handle)){};
 
@@ -378,7 +425,7 @@ DataStorage::Element::operator=(DataStorage::Element&& other)
 {
   m_dim1 = std::move(other.m_dim1);
   m_dim2 = std::move(other.m_dim2);
-    m_info = std::move(other.m_info );
+  m_info = std::move(other.m_info);
   m_id = std::move(other.m_id);
   m_cdt_handle = std::move(other.m_cdt_handle);
 
