@@ -20,19 +20,20 @@
 #include "textinput.h"
 
 #include <assert.h>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 
 // BEGIN class PointOfInterest
-growing_balls::TextInput::PointOfInterest::PointOfInterest(std::string input_str)
+growing_balls::TextInput::PointOfInterest::PointOfInterest(
+  std::string input_str)
 {
   std::stringstream ss(input_str);
-  std::string first, second, last; 
+  std::string first, second, last;
   std::getline(ss, first, '\'');
   std::getline(ss, second, '\'');
   std::getline(ss, last);
-  
+
   m_label = second;
   std::stringstream ss_first(first);
   ss_first >> m_lat >> m_lon >> m_priority >> m_radius >> m_osmid;
@@ -40,29 +41,32 @@ growing_balls::TextInput::PointOfInterest::PointOfInterest(std::string input_str
   ss_last >> m_font_fac;
 }
 
-std::string growing_balls::TextInput::PointOfInterest::print() const
+std::string
+growing_balls::TextInput::PointOfInterest::print() const
 {
   std::stringstream ss_result;
-  
+
   ss_result.precision(22);
-  ss_result << m_lat << " " << m_lon << " " << m_priority << " " << m_osmid << " '" << m_label << 
-  "' " << m_font_fac;
-  
+  ss_result << m_lat << " " << m_lon << " " << m_priority << " " << m_osmid
+            << " '" << m_label << "' " << m_font_fac;
+
   return ss_result.str();
 }
 // END class PointOfInterest
 
 // BEGIN class TextInput
-std::vector<growing_balls::TextInput::PointOfInterest> growing_balls::TextInput::import_label(std::string input_file)
+std::vector<growing_balls::TextInput::PointOfInterest>
+growing_balls::TextInput::import_label(std::string input_file)
 {
   std::vector<PointOfInterest> result;
   std::ifstream inFile(input_file);
   if (!inFile) {
     // if the file could not be opened: return an empty result
-    std::cerr << "File " << input_file << " could not be opened to import label data" << std::endl;
+    std::cerr << "File " << input_file
+              << " could not be opened to import label data" << std::endl;
     return result;
   }
-  
+
   std::size_t total;
   inFile >> total;
   for (std::string line; std::getline(inFile, line);) {
@@ -70,9 +74,9 @@ std::vector<growing_balls::TextInput::PointOfInterest> growing_balls::TextInput:
       result.emplace_back(line);
     }
   }
-  
-  assert (result.size() == total);
-  
+
+  assert(result.size() == total);
+
   return result;
 }
 // END class TextInput
