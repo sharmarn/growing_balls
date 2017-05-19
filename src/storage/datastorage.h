@@ -20,7 +20,7 @@ struct Helpers;
 
 namespace growing_balls {
 
-template<typename Info>
+template <typename Info>
 class DataStorage
 {
 public:
@@ -114,8 +114,8 @@ public:
 
   ElementId insert(Element& elem);
 
-  void insert( typename std::vector<Element>::iterator begin,
-               typename std::vector<Element>::iterator end);
+  void insert(typename std::vector<Element>::iterator begin,
+              typename std::vector<Element>::iterator end);
 
   /**
    * The neighborhood visitor is applied for each neighbor of the specified
@@ -155,37 +155,33 @@ private:
 // BEGIN Helpers
 namespace growing_balls {
 #define TMPL_HDR template <typename Info>
-  #define TMPL_CLS DataStorage<Info>
+#define TMPL_CLS DataStorage<Info>
 
 TMPL_HDR
 struct Helpers
 {
   using Element = typename TMPL_CLS::Element;
-  
+
   struct SpatialSortingTrait
   {
     using Point_2 = Element;
-    using Less_x_2 = std::function<bool(const Element&,
-                                        const Element&)>;
-    using Less_y_2 = std::function<bool(const Element&,
-                                        const Element&)>;
+    using Less_x_2 = std::function<bool(const Element&, const Element&)>;
+    using Less_y_2 = std::function<bool(const Element&, const Element&)>;
 
     Less_x_2 less_x_2_object() const
     {
       auto cmp_d1 = typename TMPL_CLS::LessDim1();
-      return
-        [cmp_d1](const Element& a, const Element& b) {
-          return cmp_d1(a.get_coord_1(), b.get_coord_1());
-        };
+      return [cmp_d1](const Element& a, const Element& b) {
+        return cmp_d1(a.get_coord_1(), b.get_coord_1());
+      };
     }
 
     Less_y_2 less_y_2_object() const
     {
       auto cmp_d2 = typename TMPL_CLS::LessDim2();
-      return
-        [cmp_d2](const Element& a, const Element& b) {
-          return cmp_d2(a.get_coord_2(), b.get_coord_2());
-        };
+      return [cmp_d2](const Element& a, const Element& b) {
+        return cmp_d2(a.get_coord_2(), b.get_coord_2());
+      };
     }
   };
 
@@ -269,22 +265,24 @@ TMPL_CLS::insert(typename std::vector<Element>::iterator begin,
 }
 
 TMPL_HDR template <typename Visitor>
-void TMPL_CLS::visit_with_aux(const VertexCirculator& begin,
-                    const VertexCirculator& current,
-                    const VertexCirculator& end, ElementId query, Visitor& v)
+void
+TMPL_CLS::visit_with_aux(const VertexCirculator& begin,
+                         const VertexCirculator& current,
+                         const VertexCirculator& end, ElementId query,
+                         Visitor& v)
 {
   VertexCirculator it = begin;
-  
+
   // add the elements that were already visited to skip
   std::unordered_set<ElementId> skip;
   skip.insert(query);
   while (it != current) {
     assert(!m_cdt.is_auxiliary(it));
     skip.insert(it->info());
-    
+
     ++it;
   }
-  
+
   // now it == current and should be the first aux point in the Circulator
   assert(it == current && m_cdt.is_auxiliary(it));
   do {
@@ -323,16 +321,17 @@ void TMPL_CLS::visit_with_aux(const VertexCirculator& begin,
         ++it2;
       } while (it2 != end2);
     }
-    
+
     ++it;
   } while (it != end);
 }
 
 TMPL_HDR template <typename Visitor>
-void TMPL_CLS::neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
+void
+TMPL_CLS::neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
 {
   auto& elem = m_elements.at(ElementIdFactory::get_vpos_from_id(elem_id));
-  
+
   VertexCirculator begin = m_cdt.incident_vertices(elem.get_handle());
   VertexCirculator vc = begin;
   auto end = vc;
@@ -341,10 +340,10 @@ void TMPL_CLS::neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
       visit_with_aux(begin, vc, end, elem_id, v);
       break;
     }
-    
+
     ElementId id = vc->info();
     v(m_elements.at(ElementIdFactory::get_vpos_from_id(id)));
-    
+
     ++vc;
   } while (vc != end);
 }
@@ -370,13 +369,14 @@ TMPL_CLS::remove(ElementId id)
 // END DataStorage
 
 // BEGIN DataStorage::Element
-TMPL_HDR TMPL_CLS::Element::Element(Dimension_1 dim1, Dimension_2 dim2, InfoType info)
+TMPL_HDR TMPL_CLS::Element::Element(Dimension_1 dim1, Dimension_2 dim2,
+                                    InfoType info)
   : m_dim1(dim1)
   , m_dim2(dim2)
   , m_info(info)
   , m_id(ElementIdFactory::UNDEFINED_ID){};
 
-  TMPL_HDR TMPL_CLS::Element::Element(Element&& other)
+TMPL_HDR TMPL_CLS::Element::Element(Element&& other)
   : m_dim1(std::move(other.m_dim1))
   , m_dim2(std::move(other.m_dim2))
   , m_info(std::move(other.m_info))
