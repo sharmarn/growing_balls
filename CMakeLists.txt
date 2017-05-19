@@ -4,6 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 project (gbons2)
 find_package(CGAL REQUIRED Core)
+find_package(Boost REQUIRED)
 
 add_subdirectory(vendor/libdts2 libdts2)
 
