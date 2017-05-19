@@ -42,11 +42,11 @@ set(GBS_ON_S2_SOURCES_CPP
 add_executable(${PROJECT_NAME} ${GBS_ON_S2_SOURCES_CPP})
 
 set(GROWING_BALLS_SOURCES
-    #src/geofunctions/geofunctions.h
-    #src/storage/datastorage.h
+    src/growing_balls.cpp
+    src/input/textinput.cpp
 )
 
-add_executable(growing_balls src/growing_balls.cpp)# ${GROWING_BALLS_SOURCES})
+add_executable(growing_balls ${GROWING_BALLS_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} ${MY_LIB_LINK_LIBS})
 add_dependencies(${PROJECT_NAME} dts2)
