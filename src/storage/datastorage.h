@@ -117,27 +117,36 @@ public:
   void insert(typename std::vector<Element>::iterator begin,
               typename std::vector<Element>::iterator end);
 
-  /**
-   * The neighborhood visitor is applied for each neighbor of the specified
-   * element.
-   *
-   * It is guaranteed that one of these neighbors is the nearest neighbor.
-   */
-  template <typename Visitor>
-  void visit_with_aux(const VertexCirculator& begin,
-                      const VertexCirculator& current,
-                      const VertexCirculator& end, ElementId query, Visitor& v);
-
-  /**
-   * The neighborhood visitor is applied for each neighbor of the specified
-   * element.
-   *
-   * It is guaranteed that one of these neighbors is the nearest neighbor.
-   */
-  template <typename Visitor>
-  void neighborhood(ElementId elem_id, Visitor& v);
-
   std::size_t remove(ElementId id);
+
+  Element& get(ElementId id)
+  {
+    return m_elements.at(ElementIdFactory::get_vpos_from_id(id));
+  };
+
+  template <typename Visitor>
+  void visit_all(Visitor& v);
+
+  /**
+   * The neighborhood visitor is applied for each neighbor of the specified
+   * element.
+   *
+   * It is guaranteed that one of these neighbors is the nearest neighbor.
+   */
+  template <typename Visitor>
+  void visit_neighborhood_with_aux(const VertexCirculator& begin,
+                                   const VertexCirculator& current,
+                                   const VertexCirculator& end, ElementId query,
+                                   Visitor& v);
+
+  /**
+   * The neighborhood visitor is applied for each neighbor of the specified
+   * element.
+   *
+   * It is guaranteed that one of these neighbors is the nearest neighbor.
+   */
+  template <typename Visitor>
+  void visit_neighborhood(ElementId elem_id, Visitor& v);
 
   friend Helpers;
 
@@ -250,8 +259,8 @@ TMPL_CLS::insert(typename std::vector<Element>::iterator begin,
       continue;
     }
     // TODO: use face handle to give a hint to the cdt insertion
-    //     auto vh = m_cdt.insert(pos, fh);
-    auto vh = m_cdt.insert(pos);
+    auto vh = m_cdt.insert(pos, fh);
+    //     auto vh = m_cdt.insert(pos);
 
     it->set_id(ElementIdFactory::get_next_id(m_elements));
     it->set_handle(vh);
@@ -266,10 +275,19 @@ TMPL_CLS::insert(typename std::vector<Element>::iterator begin,
 
 TMPL_HDR template <typename Visitor>
 void
-TMPL_CLS::visit_with_aux(const VertexCirculator& begin,
-                         const VertexCirculator& current,
-                         const VertexCirculator& end, ElementId query,
-                         Visitor& v)
+TMPL_CLS::visit_all(Visitor& v)
+{
+  for (auto& elem : m_elements) {
+    v(elem);
+  }
+}
+
+TMPL_HDR template <typename Visitor>
+void
+TMPL_CLS::visit_neighborhood_with_aux(const VertexCirculator& begin,
+                                      const VertexCirculator& current,
+                                      const VertexCirculator& end,
+                                      ElementId query, Visitor& v)
 {
   VertexCirculator it = begin;
 
@@ -328,7 +346,7 @@ TMPL_CLS::visit_with_aux(const VertexCirculator& begin,
 
 TMPL_HDR template <typename Visitor>
 void
-TMPL_CLS::neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
+TMPL_CLS::visit_neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
 {
   auto& elem = m_elements.at(ElementIdFactory::get_vpos_from_id(elem_id));
 
@@ -337,7 +355,7 @@ TMPL_CLS::neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
   auto end = vc;
   do {
     if (m_cdt.is_auxiliary(vc)) {
-      visit_with_aux(begin, vc, end, elem_id, v);
+      visit_neighborhood_with_aux(begin, vc, end, elem_id, v);
       break;
     }
 
