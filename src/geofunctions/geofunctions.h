@@ -8,6 +8,8 @@ namespace growing_balls {
 static const double DEG_TO_RAD = 0.017453292519943295769236907684886;
 static const double EARTH_RADIUS_IN_CENTIMETERS = 637279756.0856;
 
+using Distance = double;
+
 /**
  * Compute the greater circle distance on the unit sphere from p1 to p2 given by
  * their lat and lon coordinate.
@@ -17,7 +19,7 @@ static const double EARTH_RADIUS_IN_CENTIMETERS = 637279756.0856;
  * - lat in range [-90, 90]
  * - lon is in range [-180, 180]
  */
-double
+Distance
 haversine(double p1_lat, double p1_lon, double p2_lat, double p2_lon)
 {
   double lat_arc = (p1_lat - p2_lat) * DEG_TO_RAD;
@@ -39,7 +41,7 @@ haversine(double p1_lat, double p1_lon, double p2_lat, double p2_lon)
  * - lat in range [-90, 90]
  * - lon is in range [-180, 180]
  */
-double
+Distance
 distance_in_centimeters(double p1_lat, double p1_lon, double p2_lat,
                         double p2_lon)
 {
