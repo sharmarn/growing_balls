@@ -42,11 +42,12 @@ public:
   using Distance = growing_balls::Distance;
 
 public:
+  // Default constructor: initialize with an empty poi set
+  SpatialHelper() = default;
   SpatialHelper(std::vector<POI>& pois);
-  SpatialHelper(const SpatialHelper& other) = delete;
+  SpatialHelper(SpatialHelper&& other) = default;
   ~SpatialHelper();
-  SpatialHelper& operator=(const SpatialHelper& other);
-  bool operator==(const SpatialHelper& other) const = delete;
+  SpatialHelper& operator=(SpatialHelper&& other) = default;
 
   OsmId get_nearest_neighbor(OsmId id);
 
