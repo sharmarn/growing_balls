@@ -112,10 +112,23 @@ public:
 public:
   DataStorage();
 
-  ElementId insert(Element& elem);
+  /**
+   * Insert the emenent into the data storage.
+   *
+   * If there exists an element with the same position, the new element will not
+   * be inserted and the "undefined id" is returned.
+   * If the element was inserted successfully, its internal id is returned.
+   */
+  ElementId insert(Element&& elem);
 
-  void insert(typename std::vector<Element>::iterator begin,
-              typename std::vector<Element>::iterator end);
+  /**
+   * Insert the elements in the range begin to end.
+   * 
+   * Elements with a position equals to an already inserted element are skipped.
+   * Skipped elements are returned in the returned vector,
+   */
+  std::vector<Element> insert(typename std::vector<Element>::iterator begin,
+                               typename std::vector<Element>::iterator end);
 
   std::size_t remove(ElementId id);
 
@@ -210,19 +223,19 @@ TMPL_CLS::DataStorage()
   , m_proj(m_cdt.geom_traits().project_on_sphere_object()){};
 
 TMPL_HDR typename TMPL_CLS::ElementId
-TMPL_CLS::insert(typename TMPL_CLS::Element& elem)
+TMPL_CLS::insert(typename TMPL_CLS::Element&& elem)
 {
   LocateType lt;
   int32_t li;
 
   Point3 pos = m_cdt.project(elem.get_coord_1(), elem.get_coord_2());
 
-  m_cdt.locate(pos, lt, li);
+  FaceHandle fh = m_cdt.locate(pos, lt, li);
   if (lt == LocateType::VERTEX) {
     // skip insertion: point is already contained
     return ElementIdFactory::UNDEFINED_ID;
   }
-  auto vh = m_cdt.insert(pos);
+  auto vh = m_cdt.insert(pos, fh);
 
   elem.set_id(ElementIdFactory::get_next_id(m_elements));
   elem.set_handle(vh);
@@ -235,10 +248,12 @@ TMPL_CLS::insert(typename TMPL_CLS::Element& elem)
   return m_elements.back().get_id();
 }
 
-TMPL_HDR void
+TMPL_HDR std::vector<typename TMPL_CLS::Element>
 TMPL_CLS::insert(typename std::vector<Element>::iterator begin,
                  typename std::vector<Element>::iterator end)
 {
+  std::vector<Element> result;
+  
   // ATTENTION: reserving the storage space in advance may lead to performance
   // issues if many smaller chunks of elements are inserted into the data
   // structure!
@@ -256,11 +271,10 @@ TMPL_CLS::insert(typename std::vector<Element>::iterator begin,
     fh = m_cdt.locate(pos, lt, li, fh);
     if (lt == LocateType::VERTEX) {
       // skip insertion: point is already contained
+      result.push_back(std::move(*it));
       continue;
     }
-    // TODO: use face handle to give a hint to the cdt insertion
     auto vh = m_cdt.insert(pos, fh);
-    //     auto vh = m_cdt.insert(pos);
 
     it->set_id(ElementIdFactory::get_next_id(m_elements));
     it->set_handle(vh);
@@ -271,6 +285,8 @@ TMPL_CLS::insert(typename std::vector<Element>::iterator begin,
 
     m_elements.push_back(std::move(*it));
   }
+  
+  return result;
 }
 
 TMPL_HDR template <typename Visitor>
@@ -350,7 +366,15 @@ TMPL_CLS::visit_neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
 {
   auto& elem = m_elements.at(ElementIdFactory::get_vpos_from_id(elem_id));
 
-  VertexCirculator begin = m_cdt.incident_vertices(elem.get_handle());
+  auto elem_hdl = elem.get_handle();
+  
+  const auto& trs = m_cdt.trs();
+  const auto& tds = trs.tds();
+  FaceHandle femp;
+  VertexCirculator c(elem_hdl, femp);
+  const auto& neighbors = tds.incident_vertices(elem_hdl);
+  
+  VertexCirculator begin = m_cdt.incident_vertices(elem_hdl);
   VertexCirculator vc = begin;
   auto end = vc;
   do {

@@ -72,6 +72,9 @@ public:
     Coord_Lat get_lat() const { return m_lat; };
     Coord_Lon get_lon() const { return m_lon; };
     OsmId get_osm_id() const { return m_osmid; };
+    Priority get_priority() const { return m_priority; };
+    Radius get_radius() const { return m_radius; };
+    
 
     std::string print() const;
   };
