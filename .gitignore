@@ -1,5 +1,6 @@
-build/*
-build_*/*
+debug/*
+debug_*/*
+release/
 *.kdev*/*
 *.kdev4
 *.kdev
