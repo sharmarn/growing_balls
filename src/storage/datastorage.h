@@ -366,7 +366,15 @@ TMPL_CLS::visit_neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
 {
   auto& elem = m_elements.at(ElementIdFactory::get_vpos_from_id(elem_id));
 
-  VertexCirculator begin = m_cdt.incident_vertices(elem.get_handle());
+  auto elem_hdl = elem.get_handle();
+  
+  const auto& trs = m_cdt.trs();
+  const auto& tds = trs.tds();
+  FaceHandle femp;
+  VertexCirculator c(elem_hdl, femp);
+  const auto& neighbors = tds.incident_vertices(elem_hdl);
+  
+  VertexCirculator begin = m_cdt.incident_vertices(elem_hdl);
   VertexCirculator vc = begin;
   auto end = vc;
   do {

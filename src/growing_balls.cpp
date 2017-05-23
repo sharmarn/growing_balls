@@ -2,15 +2,19 @@
 #include <vector>
 
 #include "datastorage.h"
-#include "spatialfunctions.h"
+#include "eliminationorder.h"
+#include "spatialhelper.h"
 #include "textinput.h"
 
 namespace {
-using LabelElement =
-  growing_balls::DataStorage<growing_balls::TextInput::OsmId>::Element;
+  using TextInput = growing_balls::TextInput;
+  using OsmId = TextInput::OsmId;
+  using PointOfInterest = growing_balls::TextInput::PointOfInterest;
+  using DataStorage = growing_balls::DataStorage<OsmId>;
+  using LabelElement = DataStorage::Element;
 
 LabelElement
-element_from(growing_balls::TextInput::PointOfInterest poi)
+element_from(PointOfInterest poi)
 {
   return LabelElement(poi.get_lat(), poi.get_lon(), poi.get_osm_id());
 }
@@ -18,54 +22,46 @@ element_from(growing_balls::TextInput::PointOfInterest poi)
 
 int
 main(int argc, char** argv)
-{
-  growing_balls::TextInput::PointOfInterest p("48.00000000000000000 "
-                                              "11.90000000000000036 0 180.000 "
-                                              "25873009 'Bayern' 1.000");
-
-  std::cout << p.print() << std::endl;
-
-  auto labels = growing_balls::TextInput::import_label("test.complete.txt");
-
-  std::cout << "Imported " << labels.size() << " elements" << std::endl;
-
-  std::vector<LabelElement> lbl_elems;
-  for (auto& lbl : labels) {
-    lbl_elems.push_back(element_from(lbl));
+{ 
+  if (argc < 2) {
+    std::cout
+      << "Please provide a valid .complete.txt input file and a valid 'osm_id'!"
+      << std::endl;
+    return 1;
   }
-
-  growing_balls::DataStorage<growing_balls::TextInput::OsmId> store;
-  store.insert(lbl_elems.begin(), lbl_elems.end());
-
-  return 0;
-
-  using DataStorage = growing_balls::DataStorage<std::size_t>;
-  using Element = growing_balls::DataStorage<std::size_t>::Element;
-
-  std::vector<Element> input_elems;
-  input_elems.emplace_back(0., 0., 0);
-  input_elems.emplace_back(0., 1., 1);
-  input_elems.emplace_back(.5, 1., 2);
-  input_elems.emplace_back(.5, -2., 3);
-
-  std::cout << "Bulk inserting " << input_elems.size() << " elements ..."
-            << std::flush;
-  DataStorage storage;
-  storage.insert(input_elems.begin(), input_elems.end());
-  std::cout << "\t\tsuccess!" << std::endl;
-
-  std::cout << "Inserting singĺe element " << std::flush;
-  Element e = Element(0., 1., 4);
-  auto id = storage.insert(e);
-  std::cout << "\t\tsuccessfully inserted element with id " << id << std::endl;
-
-  std::cout << "Requesting adjacents of element with id " << id << " ..."
-            << std::endl;
-  auto visit = [](const Element& elem) {
-    std::cout << "Element: " << elem.get_info() << " got id " << elem.get_id()
-              << std::endl;
-  };
-  storage.neighborhood(id, visit);
-
-  std::cout << "\tfinished." << std::endl;
+  
+//   std::cout << "Inserting data to the spatial helper ..." << std::endl;
+//   growing_balls::SpatialHelper sph(TextInput::import_label(argv[1]));
+//   OsmId query = 10;
+//   std::cout << "NearestNeighbor of element #" << query << " ..." << std::endl;
+//   std::cout << "\thas id #" << sph.get_nearest_neighbor(query) << std::endl;
+//   growing_balls::SpatialHelper::Distance d = 22300000;
+//   std::cout << "Requesting elements in " << d << "-neighborhood ..." << std::endl;
+//   for (auto& e : sph.get_in_range(query, d)) {
+//     std::cout << e << std::endl;
+//   }
+//   
+//   std::cout << "Inserting data to the data storage ..." << std::endl;
+//   DataStorage ds;
+//   OsmId id;
+//   
+//   for (auto& poi : TextInput::import_label(argv[1])) {
+//     id = ds.insert(element_from(poi));
+//   }
+//   std::cout << "Outputting the neighbor elements of i_id ..." << id << std::endl;
+//   auto visitor = [](const LabelElement& elem) {
+//     std::cout << "Element #" << elem.get_info() << " at (" << elem.get_coord_1() << ", " << elem.get_coord_2() << ") with internal id " << elem.get_id() << std::endl;
+//   };
+//   ds.visit_neighborhood(id, visitor);
+//  
+//   return 0;
+  
+  growing_balls::EliminationOrder eo(argv[1]);
+  auto es = eo.compute_elimination_order();
+  
+  for (auto& e : es) {
+    auto et = e.first;
+    auto poi = e.second;
+    std::cout << et << "\t" << poi.print() << std::endl;
+  }
 }

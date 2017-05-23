@@ -37,14 +37,14 @@ public:
   using OsmId = TextInput::OsmId;
   using POI = TextInput::PointOfInterest;
 
-  using DataStorage = DataStorage<OsmId>;
+  using DataStorageOsmId = DataStorage<OsmId>;
 
   using Distance = growing_balls::Distance;
 
 public:
   // Default constructor: initialize with an empty poi set
   SpatialHelper() = default;
-  SpatialHelper(std::vector<POI>& pois);
+  SpatialHelper ( const std::vector< POI >& pois );
   SpatialHelper(SpatialHelper&& other) = default;
   ~SpatialHelper();
   SpatialHelper& operator=(SpatialHelper&& other) = default;
@@ -52,10 +52,12 @@ public:
   OsmId get_nearest_neighbor(OsmId id);
 
   std::vector<OsmId> get_in_range(OsmId id, Distance d);
+  
+  void erase(OsmId);
 
 private:
-  std::unordered_map<OsmId, DataStorage::ElementId> m_id_mapper;
-  DataStorage m_storage;
+  std::unordered_map<OsmId, DataStorageOsmId::ElementId> m_id_mapper;
+  DataStorageOsmId m_storage;
 };
 
 } // growing_balls
@@ -65,9 +67,9 @@ private:
 namespace growing_balls {
 using Distance = growing_balls::Distance;
 
-using LabelElement = SpatialHelper::DataStorage::Element;
-using LabelElementId = SpatialHelper::DataStorage::ElementId;
-using ElementIdFactory = SpatialHelper::DataStorage::ElementIdFactory;
+using LabelElement = SpatialHelper::DataStorageOsmId::Element;
+using LabelElementId = SpatialHelper::DataStorageOsmId::ElementId;
+using ElementIdFactory = SpatialHelper::DataStorageOsmId::ElementIdFactory;
 
 using OsmId = SpatialHelper::OsmId;
 
@@ -90,7 +92,7 @@ struct NN_Extractor
   OsmId m_nn_id = ElementIdFactory::UNDEFINED_ID;
   LabelElement& m_query;
 
-  NN_Extractor(OsmId query_id, SpatialHelper::DataStorage& storage)
+  NN_Extractor(OsmId query_id, SpatialHelper::DataStorageOsmId& storage)
     : m_query(storage.get(query_id)){};
 
   // CAUTION this code might not be thread save
@@ -112,10 +114,10 @@ struct RangeExplorer
   Distance m_distance_limit;
   LabelElement& m_query;
   LabelElementId m_current_id;
-  SpatialHelper::DataStorage& m_storage;
+  SpatialHelper::DataStorageOsmId& m_storage;
 
   RangeExplorer(OsmId query_id, Distance max_dist,
-                SpatialHelper::DataStorage& storage)
+                SpatialHelper::DataStorageOsmId& storage)
     : m_distance_limit(max_dist)
     , m_query(storage.get(query_id))
     , m_current_id(query_id)
@@ -144,7 +146,7 @@ struct RangeExplorer
 // END helpers and stuff
 
 // BEGIN class SpatialHelper
-SpatialHelper::SpatialHelper(std::vector<POI>& pois)
+SpatialHelper::SpatialHelper(const std::vector<POI>& pois)
 {
   std::vector<LabelElement> lbl_elems;
   for (auto poi : pois) {
@@ -155,7 +157,6 @@ SpatialHelper::SpatialHelper(std::vector<POI>& pois)
 
   ID_Mapper mapper;
   m_storage.visit_all(mapper);
-
   m_id_mapper = std::move(mapper.m_map);
 }
 
@@ -167,9 +168,10 @@ SpatialHelper::~SpatialHelper()
 SpatialHelper::OsmId
 SpatialHelper::get_nearest_neighbor(OsmId id)
 {
-  NN_Extractor nn(m_id_mapper.at(id), m_storage);
+  auto i_id = m_id_mapper.at(id);
+  NN_Extractor nn(i_id, m_storage);
 
-  m_storage.visit_neighborhood(m_id_mapper.at(id), nn);
+  m_storage.visit_neighborhood(i_id, nn);
 
   return m_storage.get(nn.m_nn_id).get_info();
 }
@@ -188,6 +190,12 @@ SpatialHelper::get_in_range(OsmId id, Distance d)
                  });
 
   return res;
+}
+
+void
+SpatialHelper::erase(OsmId id) {
+  m_storage.remove(m_id_mapper.at(id));
+  m_id_mapper.erase(id);
 }
 
 // END class SpatialHelper
