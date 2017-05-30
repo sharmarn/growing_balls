@@ -21,6 +21,7 @@
 #define ELIMINATIONORDER_H
 
 #include <algorithm>
+#include <limits>
 #include <queue>
 #include <stdint.h>
 #include <string.h>
@@ -31,15 +32,17 @@
 #include "textinput.h"
 
 namespace {
-  bool prefer(const growing_balls::TextInput::PointOfInterest& p1,
-              const growing_balls::TextInput::PointOfInterest& p2) {
-    return p1.get_priority() > p2.get_priority();
-  };
+bool
+prefer(const growing_balls::TextInput::PointOfInterest& p1,
+       const growing_balls::TextInput::PointOfInterest& p2)
+{
+  return p1.get_priority() > p2.get_priority();
+};
 }
 
 namespace growing_balls {
-  using Time = double;
-  
+using Time = double;
+
 class EliminationOrder
 {
 public:
@@ -48,11 +51,11 @@ public:
   EliminationOrder& operator=(EliminationOrder&& other) = default;
 
   std::vector<std::pair<Time, TextInput::PointOfInterest>>
-  compute_elimination_order();
+  compute_elimination_order(std::string file);
 
 private:
-  SpatialHelper m_spatial_helper;
-  std::unordered_map<TextInput::OsmId, TextInput::PointOfInterest> m_pois;
+  //   SpatialHelper m_spatial_helper;
+  //   std::unordered_map<TextInput::OsmId, TextInput::PointOfInterest> m_pois;
 };
 }
 
@@ -61,78 +64,105 @@ private:
 // BEGIN DEFINITION
 
 namespace growing_balls {
-  
+
 // BEGIN Helpers
 namespace {
-  using ID = TextInput::OsmId;
-  using PoiMap = std::unordered_map<TextInput::OsmId, TextInput::PointOfInterest>;
-  
-  enum class EventType : int32_t {
-    UPDATE_EVENT = 1,
-    COLLISION_EVENT = 2,
-  };
-  
-  struct Event {
-    Time m_trigger_time;
-    ID m_coll1;
-    ID m_coll2;
-    
-    EventType m_evt_type;
-    
-    Event(Time t, ID c1) : m_trigger_time(t), m_coll1(c1), m_coll2(c1), m_evt_type(EventType::UPDATE_EVENT) {};
-    
-    Event(Time t, ID c1, ID c2) : m_trigger_time(t), m_coll1(c1), m_coll2(c2), m_evt_type(EventType::COLLISION_EVENT) {};
-    
-    // In order to use a priority_queue (a max heap) as min heap: overload operator <
-    bool operator<(const Event& other) const {
-      if (m_trigger_time == other.m_trigger_time) {
-        if (m_evt_type == EventType::UPDATE_EVENT) {
-          // update events are prefered to collision events
-          return false;
-        } else if (m_evt_type == other.m_evt_type) {
-          // make things deterministic: use m_coll1 ids to break ties with equal event type
-          return m_coll1 > other.m_coll1;
-        } else {
-          // other is an update event and we are not -> other has higher priority
-          return true;
-        }
+using ID = TextInput::OsmId;
+using PoiMap = std::unordered_map<TextInput::OsmId, TextInput::PointOfInterest>;
+
+enum class EventType : int32_t
+{
+  UPDATE_EVENT = 1,
+  COLLISION_EVENT = 2,
+};
+
+struct Event
+{
+  Time m_trigger_time;
+  ID m_coll1;
+  ID m_coll2;
+
+  EventType m_evt_type;
+
+  Event(Time t, ID c1)
+    : m_trigger_time(t)
+    , m_coll1(c1)
+    , m_coll2(c1)
+    , m_evt_type(EventType::UPDATE_EVENT){};
+
+  Event(Time t, ID c1, ID c2)
+    : m_trigger_time(t)
+    , m_coll1(c1)
+    , m_coll2(c2)
+    , m_evt_type(EventType::COLLISION_EVENT){};
+
+  // In order to use a priority_queue (a max heap) as min heap: overload
+  // operator <
+  bool operator<(const Event& other) const
+  {
+    if (m_trigger_time == other.m_trigger_time) {
+      if (m_evt_type == EventType::UPDATE_EVENT) {
+        // update events are prefered to collision events
+        return false;
+      } else if (m_evt_type == other.m_evt_type) {
+        // make things deterministic: use m_coll1 ids to break ties with equal
+        // event type
+        return m_coll1 > other.m_coll1;
       } else {
-        return m_trigger_time > other.m_trigger_time;
+        // other is an update event and we are not -> other has higher priority
+        return true;
       }
-    }
-  };
-  
-  Time compute_collision_time(const TextInput::PointOfInterest& p1, const TextInput::PointOfInterest& p2) {
-    auto d = distance_in_centimeters(p1.get_lat(), p1.get_lon(), p2.get_lat(), p2.get_lon());
-    
-    return d / (p1.get_radius() + p2.get_radius());
-  }
-  
-  Event predict_collision(const TextInput::PointOfInterest& p, Time t, SpatialHelper& sh, const PoiMap& poi_map) {
-    auto id_nn = sh.get_nearest_neighbor(p.get_osm_id());
-    auto& nn = poi_map.at(id_nn);
-    
-    auto distance_pnn = distance_in_centimeters(p.get_lat(), p.get_lon(), nn.get_lat(), nn.get_lon());
-    Time t_upd = distance_pnn / (2 * p.get_radius());
-    
-    if (t < t_upd) {
-      return Event(t_upd, p.get_osm_id());
     } else {
-      Time min_coll_t = std::numeric_limits<Time>::max();
-      OsmId min_coll_p = 0;
-      for (auto id : sh.get_in_range(p.get_osm_id(), 2 * distance_pnn)) {
-        auto& p2 = poi_map.at(id);
-        
-        Time coll_t = compute_collision_time(p, p2);
-        if (coll_t < min_coll_t) {
-          min_coll_t = coll_t;
-          min_coll_p = p2.get_osm_id();
-        }
-      }
-      
-      return Event(min_coll_t,p.get_osm_id(), min_coll_p);
+      return m_trigger_time > other.m_trigger_time;
     }
   }
+};
+
+Time
+compute_collision_time(const TextInput::PointOfInterest& p1,
+                       const TextInput::PointOfInterest& p2)
+{
+  auto d = distance_in_centimeters(p1.get_lat(), p1.get_lon(), p2.get_lat(),
+                                   p2.get_lon());
+
+  return d / (p1.get_radius() + p2.get_radius());
+}
+
+Event
+predict_collision(const TextInput::PointOfInterest& p, Time t,
+                  SpatialHelper& sh, const PoiMap& poi_map)
+{
+  auto id_nn = sh.get_nearest_neighbor(p.get_osm_id());
+
+  if (id_nn == sh.UNDEFINED_ID) {
+    return Event(std::numeric_limits<Time>::max(), p.get_osm_id(),
+                 p.get_osm_id());
+  }
+
+  auto& nn = poi_map.at(id_nn);
+
+  auto distance_pnn = distance_in_centimeters(p.get_lat(), p.get_lon(),
+                                              nn.get_lat(), nn.get_lon());
+  Time t_upd = distance_pnn / (2 * p.get_radius());
+
+  if (t < t_upd) {
+    return Event(t_upd, p.get_osm_id());
+  } else {
+    Time min_coll_t = std::numeric_limits<Time>::max();
+    OsmId min_coll_p = 0;
+    for (auto id : sh.get_in_range(p.get_osm_id(), 2 * distance_pnn)) {
+      auto& p2 = poi_map.at(id);
+
+      Time coll_t = compute_collision_time(p, p2);
+      if (coll_t < min_coll_t) {
+        min_coll_t = coll_t;
+        min_coll_p = p2.get_osm_id();
+      }
+    }
+
+    return Event(min_coll_t, p.get_osm_id(), min_coll_p);
+  }
+}
 }
 // END Helpers
 
@@ -140,71 +170,93 @@ namespace {
 EliminationOrder::EliminationOrder(std::string file)
 {
   auto labels = TextInput::import_label(file);
-  
-  m_spatial_helper = SpatialHelper(labels);
-  std::transform(labels.begin(), labels.end(), std::inserter(m_pois, m_pois.begin()), [](TextInput::PointOfInterest& poi) { return std::make_pair(poi.get_osm_id(), std::move(poi)); });
+
+  //   m_spatial_helper = SpatialHelper(labels);
+  //   std::transform(labels.begin(), labels.end(), std::inserter(m_pois,
+  //   m_pois.begin()), [](TextInput::PointOfInterest& poi) { return
+  //   std::make_pair(poi.get_osm_id(), std::move(poi)); });
 }
 
 std::vector<std::pair<Time, growing_balls::TextInput::PointOfInterest>>
-EliminationOrder::compute_elimination_order()
+EliminationOrder::compute_elimination_order(std::string file)
 {
+  auto labels = TextInput::import_label(file);
+
+  SpatialHelper spatial_helper(labels);
+
+  std::unordered_map<TextInput::OsmId, TextInput::PointOfInterest> pois;
+  std::transform(labels.begin(), labels.end(),
+                 std::inserter(pois, pois.begin()),
+                 [](TextInput::PointOfInterest& poi) {
+                   return std::make_pair(poi.get_osm_id(), std::move(poi));
+                 });
+
   std::vector<std::pair<Time, TextInput::PointOfInterest>> result;
-  
+
   std::priority_queue<Event> Q;
-  
+
   // initialize
-  for (const auto& p : m_pois) {
-    Event evt = predict_collision(p.second, 0., m_spatial_helper, m_pois);
-    
+  for (const auto& p : pois) {
+    Event evt = predict_collision(p.second, 0., spatial_helper, pois);
+
     assert(evt.m_evt_type == EventType::UPDATE_EVENT);
     Q.push(evt);
   }
-  
+
   Time t = 0;
   while (!Q.empty()) {
     auto current_evt = Q.top();
     Q.pop();
-    
-    auto p1 = m_pois.find(current_evt.m_coll1);
-    if (p1 != m_pois.end()) {
+    t = current_evt.m_trigger_time;
+
+    auto p1 = pois.find(current_evt.m_coll1);
+    if (p1 != pois.end()) {
       if (current_evt.m_evt_type == EventType::UPDATE_EVENT) {
-        auto evt = predict_collision(p1->second, t, m_spatial_helper, m_pois);
+        auto evt = predict_collision(p1->second, t, spatial_helper, pois);
         Q.push(evt);
-      } else if (current_evt.m_evt_type == EventType::COLLISION_EVENT){
-        auto p2 = m_pois.find(current_evt.m_coll2);
-        if (p2 != m_pois.end()) {
-          Time coll_t = compute_collision_time(p1->second, p2->second);
+      } else if (current_evt.m_evt_type == EventType::COLLISION_EVENT) {
+        if (current_evt.m_coll1 == current_evt.m_coll2) {
+          result.emplace_back(t, p1->second);
+          break;
+        }
+
+        auto p2 = pois.find(current_evt.m_coll2);
+        if (p2 != pois.end()) {
           // here p1 and p2 are alive
           if (prefer(p1->second, p2->second)) {
-            result.emplace_back(coll_t, std::move(p2->second));
-            m_spatial_helper.erase(p2->first);
-            m_pois.erase(p2);
-            
-            predict_collision(p1->second, t, m_spatial_helper, m_pois);
+            //             result.emplace_back(coll_t, std::move(p2->second));
+            result.emplace_back(t, p2->second);
+            spatial_helper.erase(p2->first);
+            pois.erase(p2);
+
+            auto evt = predict_collision(p1->second, t, spatial_helper, pois);
+            Q.push(evt);
           } else {
-            result.emplace_back(coll_t, std::move(p1->second));
-            m_spatial_helper.erase(p1->first);
-            m_pois.erase(p1);
-            
-            predict_collision(p2->second, t, m_spatial_helper, m_pois);
+            //             result.emplace_back(coll_t, std::move(p1->second));
+            result.emplace_back(t, p1->second);
+            spatial_helper.erase(p1->first);
+            pois.erase(p1);
+
+            auto evt = predict_collision(p2->second, t, spatial_helper, pois);
+            Q.push(evt);
           }
         } else {
           // p1 is the only collision partner alive => repredict collision
-          auto evt = predict_collision(p1->second, t, m_spatial_helper, m_pois);
+          auto evt = predict_collision(p1->second, t, spatial_helper, pois);
           Q.push(evt);
         }
       }
     } else {
       // check if p2 is alive and predict its next collision
       // otherwise do nothing
-      auto p2 = m_pois.find(current_evt.m_coll2);
-      if (p2 != m_pois.end()) {
-        auto evt = predict_collision(p2->second, t, m_spatial_helper, m_pois);
+      auto p2 = pois.find(current_evt.m_coll2);
+      if (p2 != pois.end()) {
+        auto evt = predict_collision(p2->second, t, spatial_helper, pois);
         Q.push(evt);
       };
     }
   }
-  
+
   return result;
 }
 

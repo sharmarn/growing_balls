@@ -41,18 +41,20 @@ public:
 
   using Distance = growing_balls::Distance;
 
+  static const DataStorageOsmId::ElementId UNDEFINED_ID = 0;
+
 public:
   // Default constructor: initialize with an empty poi set
   SpatialHelper() = default;
-  SpatialHelper ( const std::vector< POI >& pois );
-  SpatialHelper(SpatialHelper&& other) = default;
+  SpatialHelper(const std::vector<POI>& pois);
+  SpatialHelper(SpatialHelper&& other) = delete;
   ~SpatialHelper();
-  SpatialHelper& operator=(SpatialHelper&& other) = default;
+  SpatialHelper& operator=(SpatialHelper&& other) = delete;
 
   OsmId get_nearest_neighbor(OsmId id);
 
   std::vector<OsmId> get_in_range(OsmId id, Distance d);
-  
+
   void erase(OsmId);
 
 private:
@@ -89,6 +91,7 @@ struct ID_Mapper
 struct NN_Extractor
 {
   Distance m_nn_distance = std::numeric_limits<Distance>::max();
+  // TODO: OsmId != UNDEFINED_ID!!!!
   OsmId m_nn_id = ElementIdFactory::UNDEFINED_ID;
   LabelElement& m_query;
 
@@ -160,10 +163,21 @@ SpatialHelper::SpatialHelper(const std::vector<POI>& pois)
   m_id_mapper = std::move(mapper.m_map);
 }
 
+// SpatialHelper::SpatialHelper(SpatialHelper&& other)
+// : m_id_mapper(std::move(other.m_id_mapper))
+// , m_storage(std::move(other.m_storage)){}
+
 SpatialHelper::~SpatialHelper()
 {
   //   delete(m_storage);
 }
+
+// SpatialHelper& SpatialHelper::operator=(SpatialHelper&& other) {
+//   m_id_mapper = std::move(other.m_id_mapper);
+//   m_storage = std::move(other.m_storage);
+//
+//   return *this;
+// }
 
 SpatialHelper::OsmId
 SpatialHelper::get_nearest_neighbor(OsmId id)
@@ -173,15 +187,20 @@ SpatialHelper::get_nearest_neighbor(OsmId id)
 
   m_storage.visit_neighborhood(i_id, nn);
 
+  if (nn.m_nn_id == ElementIdFactory::UNDEFINED_ID) {
+    return UNDEFINED_ID;
+  }
+
   return m_storage.get(nn.m_nn_id).get_info();
 }
 
 std::vector<OsmId>
 SpatialHelper::get_in_range(OsmId id, Distance d)
 {
-  RangeExplorer r_exp(m_id_mapper.at(id), d, m_storage);
+  auto i_id = m_id_mapper.at(id);
+  RangeExplorer r_exp(i_id, d, m_storage);
 
-  m_storage.visit_neighborhood(m_id_mapper.at(id), r_exp);
+  m_storage.visit_neighborhood(i_id, r_exp);
 
   std::vector<OsmId> res;
   std::transform(r_exp.m_neighbors.begin(), r_exp.m_neighbors.end(),
@@ -193,7 +212,8 @@ SpatialHelper::get_in_range(OsmId id, Distance d)
 }
 
 void
-SpatialHelper::erase(OsmId id) {
+SpatialHelper::erase(OsmId id)
+{
   m_storage.remove(m_id_mapper.at(id));
   m_id_mapper.erase(id);
 }
