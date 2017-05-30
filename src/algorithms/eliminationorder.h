@@ -30,6 +30,7 @@
 #include "geofunctions.h"
 #include "spatialhelper.h"
 #include "textinput.h"
+#include "timer.h"
 
 namespace {
 bool
@@ -180,10 +181,14 @@ EliminationOrder::EliminationOrder(std::string file)
 std::vector<std::pair<Time, growing_balls::TextInput::PointOfInterest>>
 EliminationOrder::compute_elimination_order(std::string file)
 {
+  debug_timer::Timer timer;
+  timer.start();
   auto labels = TextInput::import_label(file);
-
+  
+  timer.createTimepoint();
   SpatialHelper spatial_helper(labels);
-
+  
+  timer.createTimepoint();
   std::unordered_map<TextInput::OsmId, TextInput::PointOfInterest> pois;
   std::transform(labels.begin(), labels.end(),
                  std::inserter(pois, pois.begin()),
@@ -191,10 +196,12 @@ EliminationOrder::compute_elimination_order(std::string file)
                    return std::make_pair(poi.get_osm_id(), std::move(poi));
                  });
 
+  timer.createTimepoint();
   std::vector<std::pair<Time, TextInput::PointOfInterest>> result;
 
   std::priority_queue<Event> Q;
 
+  timer.createTimepoint();
   // initialize
   for (const auto& p : pois) {
     Event evt = predict_collision(p.second, 0., spatial_helper, pois);
@@ -203,6 +210,7 @@ EliminationOrder::compute_elimination_order(std::string file)
     Q.push(evt);
   }
 
+  timer.createTimepoint();
   Time t = 0;
   while (!Q.empty()) {
     auto current_evt = Q.top();
@@ -256,6 +264,18 @@ EliminationOrder::compute_elimination_order(std::string file)
       };
     }
   }
+  timer.stop();
+  
+  auto times = timer.getTimes();
+  
+  std::cout << "Computation of the elimination order finished." << std::endl;
+  std::cout << "Required times in ms were as follows:" << std::endl;
+  std::cout << times[0] << "\t Label import" << std::endl;
+  std::cout << times[1] << "\t Initialization of the spatial helper" << std::endl;
+  std::cout << times[2] << "\t Creation of the poi map" << std::endl;
+  std::cout << times[4] << "\t Initialization of the algorithm" << std::endl;
+  std::cout << times[5] << "\t Main algorithm loop" << std::endl;
+  
 
   return result;
 }

@@ -11,7 +11,7 @@ main(int argc, char** argv)
               << std::endl;
     return 1;
   }
-
+  
   growing_balls::EliminationOrder eo(argv[1]);
   auto es = eo.compute_elimination_order(argv[1]);
 
