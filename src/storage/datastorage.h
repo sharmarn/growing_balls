@@ -123,12 +123,12 @@ public:
 
   /**
    * Insert the elements in the range begin to end.
-   * 
+   *
    * Elements with a position equals to an already inserted element are skipped.
    * Skipped elements are returned in the returned vector,
    */
   std::vector<Element> insert(typename std::vector<Element>::iterator begin,
-                               typename std::vector<Element>::iterator end);
+                              typename std::vector<Element>::iterator end);
 
   std::size_t remove(ElementId id);
 
@@ -253,7 +253,7 @@ TMPL_CLS::insert(typename std::vector<Element>::iterator begin,
                  typename std::vector<Element>::iterator end)
 {
   std::vector<Element> result;
-  
+
   // ATTENTION: reserving the storage space in advance may lead to performance
   // issues if many smaller chunks of elements are inserted into the data
   // structure!
@@ -285,7 +285,7 @@ TMPL_CLS::insert(typename std::vector<Element>::iterator begin,
 
     m_elements.push_back(std::move(*it));
   }
-  
+
   return result;
 }
 
@@ -367,13 +367,7 @@ TMPL_CLS::visit_neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
   auto& elem = m_elements.at(ElementIdFactory::get_vpos_from_id(elem_id));
 
   auto elem_hdl = elem.get_handle();
-  
-  const auto& trs = m_cdt.trs();
-  const auto& tds = trs.tds();
-  FaceHandle femp;
-  VertexCirculator c(elem_hdl, femp);
-  const auto& neighbors = tds.incident_vertices(elem_hdl);
-  
+
   VertexCirculator begin = m_cdt.incident_vertices(elem_hdl);
   VertexCirculator vc = begin;
   auto end = vc;
@@ -393,18 +387,19 @@ TMPL_CLS::visit_neighborhood(TMPL_CLS::ElementId elem_id, Visitor& v)
 TMPL_HDR std::size_t
 TMPL_CLS::remove(ElementId id)
 {
-  assert(id < m_elements.size());
+  ElementId i_id = ElementIdFactory::get_vpos_from_id(id);
+  assert(i_id < m_elements.size());
 
-  VertexHandle vh = m_elements.at(id).get_handle();
+  VertexHandle vh = m_elements.at(i_id).get_handle();
   if (vh == nullptr) {
-    assert(m_elements.at(id).get_id() == ElementIdFactory::UNDEFINED_ID);
+    assert(m_elements.at(i_id).get_id() == ElementIdFactory::UNDEFINED_ID);
     return 0;
   }
+  m_cdt.remove(vh);
 
-  auto& elem = m_elements.at(id);
-  elem.set_id(ElementIdFactory::UNDEFINED_ID);
-  m_cdt.remove(elem.get_handle());
+  auto& elem = m_elements.at(i_id);
   elem.set_handle(nullptr);
+  elem.set_id(ElementIdFactory::UNDEFINED_ID);
 
   return 1;
 }
