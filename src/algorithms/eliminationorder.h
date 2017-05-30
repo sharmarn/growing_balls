@@ -47,12 +47,22 @@ using Time = double;
 class EliminationOrder
 {
 public:
+  struct Elimination {
+    growing_balls::TextInput::PointOfInterest m_eliminated;
+    growing_balls::TextInput::PointOfInterest m_eliminated_by;
+    Time m_elimination_time;
+    
+    Elimination( Time elim_t,
+      growing_balls::TextInput::PointOfInterest elim,
+      growing_balls::TextInput::PointOfInterest elim_by)
+    : m_eliminated(std::move(elim)), m_eliminated_by(std::move(elim_by)), m_elimination_time(elim_t) {};
+  };
+public:
   EliminationOrder(std::string file);
   EliminationOrder(EliminationOrder&& other) = default;
   EliminationOrder& operator=(EliminationOrder&& other) = default;
 
-  std::vector<std::pair<Time, TextInput::PointOfInterest>>
-  compute_elimination_order(std::string file);
+    std::vector<Elimination> compute_elimination_order ( std::string file );
 
 private:
   //   SpatialHelper m_spatial_helper;
@@ -178,7 +188,7 @@ EliminationOrder::EliminationOrder(std::string file)
   //   std::make_pair(poi.get_osm_id(), std::move(poi)); });
 }
 
-std::vector<std::pair<Time, growing_balls::TextInput::PointOfInterest>>
+std::vector<EliminationOrder::Elimination>
 EliminationOrder::compute_elimination_order(std::string file)
 {
   debug_timer::Timer timer;
@@ -197,7 +207,7 @@ EliminationOrder::compute_elimination_order(std::string file)
                  });
 
   timer.createTimepoint();
-  std::vector<std::pair<Time, TextInput::PointOfInterest>> result;
+  std::vector<Elimination> result;
 
   std::priority_queue<Event> Q;
 
@@ -224,7 +234,7 @@ EliminationOrder::compute_elimination_order(std::string file)
         Q.push(evt);
       } else if (current_evt.m_evt_type == EventType::COLLISION_EVENT) {
         if (current_evt.m_coll1 == current_evt.m_coll2) {
-          result.emplace_back(t, p1->second);
+          result.emplace_back(t, p1->second, p1->second);
           break;
         }
 
@@ -233,7 +243,7 @@ EliminationOrder::compute_elimination_order(std::string file)
           // here p1 and p2 are alive
           if (prefer(p1->second, p2->second)) {
             //             result.emplace_back(coll_t, std::move(p2->second));
-            result.emplace_back(t, p2->second);
+            result.emplace_back(t, p2->second, p1->second);
             spatial_helper.erase(p2->first);
             pois.erase(p2);
 
@@ -241,7 +251,7 @@ EliminationOrder::compute_elimination_order(std::string file)
             Q.push(evt);
           } else {
             //             result.emplace_back(coll_t, std::move(p1->second));
-            result.emplace_back(t, p1->second);
+            result.emplace_back(t, p1->second, p2->second);
             spatial_helper.erase(p1->first);
             pois.erase(p1);
 
