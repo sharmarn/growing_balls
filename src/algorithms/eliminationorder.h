@@ -183,6 +183,14 @@ EliminationOrder::compute_elimination_order(std::string file) {
                    return std::make_pair(poi.get_osm_id(), std::move(poi));
                  });
 
+  // remove dupplicated pois
+  for (auto &d : spatial_helper.get_dupplicates()) {
+    auto dupplicate = pois.find(d);
+    std::cout << "Ignoring dupplicated poi: " << dupplicate->second.print()
+              << std::endl;
+    pois.erase(dupplicate);
+  }
+
   timer.createTimepoint();
   std::vector<Elimination> result;
 
