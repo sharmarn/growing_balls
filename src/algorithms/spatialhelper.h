@@ -26,16 +26,16 @@
 
 #include "datastorage.h"
 #include "geofunctions.h"
-#include "textinput.h"
+#include "io.h"
 
 namespace growing_balls {
 
 class SpatialHelper
 {
 public:
-  using TextInput = growing_balls::TextInput;
-  using OsmId = TextInput::OsmId;
-  using POI = TextInput::PointOfInterest;
+  using IO = growing_balls::IO;
+  using OsmId = IO::OsmId;
+  using POI = IO::PointOfInterest;
 
   using DataStorageOsmId = DataStorage<OsmId>;
 

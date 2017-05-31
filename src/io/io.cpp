@@ -17,17 +17,20 @@
  *
  */
 
-#include "textinput.h"
+#include "io.h"
 
 #include <assert.h>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <limits>
 #include <sstream>
 
+namespace growing_balls {
+
 // BEGIN class PointOfInterest
-growing_balls::TextInput::PointOfInterest::PointOfInterest(
-  std::string input_str)
-{
+IO::PointOfInterest::PointOfInterest(std::string input_str)
+    : m_elim_t(0), m_elim_partner() {
   std::stringstream ss(input_str);
   std::string first, second, last;
   std::getline(ss, first, '\'');
@@ -41,9 +44,7 @@ growing_balls::TextInput::PointOfInterest::PointOfInterest(
   ss_last >> m_font_fac;
 }
 
-std::string
-growing_balls::TextInput::PointOfInterest::print() const
-{
+std::string IO::PointOfInterest::print() const {
   std::stringstream ss_result;
 
   ss_result.precision(22);
@@ -52,12 +53,37 @@ growing_balls::TextInput::PointOfInterest::print() const
 
   return ss_result.str();
 }
+
+void IO::PointOfInterest::set_elimination(ElimTime elim_t, OsmId elim_p) {
+  m_elim_t = elim_t;
+  m_elim_partner = elim_p;
+}
 // END class PointOfInterest
 
-// BEGIN class TextInput
-std::vector<growing_balls::TextInput::PointOfInterest>
-growing_balls::TextInput::import_label(std::string input_file)
-{
+// BEGIN class IO
+
+bool IO::export_eliminationorder(std::string &export_file,
+                                 std::vector<IO::PointOfInterest> &pois) {
+  std::ofstream outFile(export_file);
+  if (!outFile) {
+    std::cerr << "File " << export_file << " could not be opened!" << std::endl;
+    std::cerr << "CAUTION! No output file has been generated!" << std::endl;
+    return false;
+  }
+
+  outFile << pois.size() << std::endl;
+
+  outFile << std::setprecision(std::numeric_limits<long double>::digits10 + 1);
+  for (auto &poi : pois) {
+    outFile << poi.get_lat() << ' ' << poi.get_lon() << ' ' << poi.get_osm_id()
+            << ' ' << poi.get_priority() << ' ' << poi.get_elim_time() << ' '
+            << poi.get_radius() << ' ' << poi.get_font_factor() << ' '
+            << poi.get_label() << std::endl;
+  }
+  return true;
+}
+
+std::vector<IO::PointOfInterest> IO::import_label(std::string input_file) {
   std::vector<PointOfInterest> result;
   std::ifstream inFile(input_file);
   if (!inFile) {
@@ -79,4 +105,6 @@ growing_balls::TextInput::import_label(std::string input_file)
 
   return result;
 }
-// END class TextInput
+}
+
+// END class IO

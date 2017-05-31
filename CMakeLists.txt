@@ -14,7 +14,7 @@ include_directories(
     src/algorithms/
     src/geofunctions/
     src/helpers/
-    src/input/
+    src/io/
     src/storage/
 	${LIBDTS2_INCLUDE_DIR}
 )
@@ -46,7 +46,7 @@ add_executable(${PROJECT_NAME} ${GBS_ON_S2_SOURCES_CPP})
 set(GROWING_BALLS_SOURCES
     src/growing_balls.cpp
     src/helpers/timer.cpp
-    src/input/textinput.cpp
+    src/io/io.cpp
 )
 
 add_executable(growing_balls ${GROWING_BALLS_SOURCES})

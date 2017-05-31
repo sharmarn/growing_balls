@@ -17,8 +17,8 @@
  *
  */
 
-#ifndef TEXTINPUT_H
-#define TEXTINPUT_H
+#ifndef IO_H
+#define IO_H
 
 #include <stdint.h>
 #include <string>
@@ -26,8 +26,7 @@
 
 namespace growing_balls {
 
-class TextInput
-{
+class IO {
 public:
   using Coord_Lat = double;
   using Coord_Lon = double;
@@ -38,9 +37,10 @@ public:
   using Priority = uint32_t;
   using Radius = double;
 
+  using ElimTime = double;
+
 public:
-  class PointOfInterest
-  {
+  class PointOfInterest {
     // position
     Coord_Lat m_lat;
     Coord_Lon m_lon;
@@ -52,16 +52,14 @@ public:
     Priority m_priority;
     Radius m_radius;
 
+    ElimTime m_elim_t;
+    OsmId m_elim_partner;
+
   public:
     PointOfInterest(Coord_Lat lat, Coord_Lon lon, FontFactor f_fac, Label lbl,
                     OsmId id, Priority prio, Radius rad)
-      : m_lat(lat)
-      , m_lon(lon)
-      , m_font_fac(f_fac)
-      , m_label(lbl)
-      , m_osmid(id)
-      , m_priority(prio)
-      , m_radius(rad){};
+        : m_lat(lat), m_lon(lon), m_font_fac(f_fac), m_label(lbl), m_osmid(id),
+          m_priority(prio), m_radius(rad){};
 
     /**
      * parses a string of the following form and initializes the PointOfInterest
@@ -69,6 +67,9 @@ public:
      */
     PointOfInterest(std::string input_str);
 
+    ElimTime get_elim_time() const { return m_elim_t; };
+    FontFactor get_font_factor() const { return m_font_fac; };
+    Label get_label() const { return m_label; };
     Coord_Lat get_lat() const { return m_lat; };
     Coord_Lon get_lon() const { return m_lon; };
     OsmId get_osm_id() const { return m_osmid; };
@@ -76,10 +77,14 @@ public:
     Radius get_radius() const { return m_radius; };
 
     std::string print() const;
+
+    void set_elimination(ElimTime et, OsmId e_partner);
   };
 
   static std::vector<PointOfInterest> import_label(std::string input_file);
+  static bool export_eliminationorder(std::string &export_file,
+                                      std::vector<PointOfInterest> &pois);
 };
 }
 
-#endif // TEXTINPUT_H
+#endif // IO
