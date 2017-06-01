@@ -26,36 +26,42 @@
 
 #include "datastorage.h"
 #include "geofunctions.h"
-#include "textinput.h"
+#include "io.h"
 
 namespace growing_balls {
 
-class SpatialHelper
-{
+class SpatialHelper {
 public:
-  using TextInput = growing_balls::TextInput;
-  using OsmId = TextInput::OsmId;
-  using POI = TextInput::PointOfInterest;
+  using IO = growing_balls::IO;
+  using OsmId = IO::OsmId;
+  using POI = IO::PointOfInterest;
 
-  using DataStorage = DataStorage<OsmId>;
+  using DataStorageOsmId = DataStorage<OsmId>;
 
   using Distance = growing_balls::Distance;
+
+  static const DataStorageOsmId::ElementId UNDEFINED_ID = 0;
 
 public:
   // Default constructor: initialize with an empty poi set
   SpatialHelper() = default;
-  SpatialHelper(std::vector<POI>& pois);
-  SpatialHelper(SpatialHelper&& other) = default;
+  SpatialHelper(const std::vector<POI> &pois);
+  SpatialHelper(SpatialHelper &&other) = delete;
   ~SpatialHelper();
-  SpatialHelper& operator=(SpatialHelper&& other) = default;
+  SpatialHelper &operator=(SpatialHelper &&other) = delete;
 
   OsmId get_nearest_neighbor(OsmId id);
 
   std::vector<OsmId> get_in_range(OsmId id, Distance d);
 
+  void erase(OsmId);
+
+  std::vector<OsmId> get_dupplicates() const { return m_dupplicates; };
+
 private:
-  std::unordered_map<OsmId, DataStorage::ElementId> m_id_mapper;
-  DataStorage m_storage;
+  std::unordered_map<OsmId, DataStorageOsmId::ElementId> m_id_mapper;
+  std::vector<OsmId> m_dupplicates;
+  DataStorageOsmId m_storage;
 };
 
 } // growing_balls
@@ -65,40 +71,37 @@ private:
 namespace growing_balls {
 using Distance = growing_balls::Distance;
 
-using LabelElement = SpatialHelper::DataStorage::Element;
-using LabelElementId = SpatialHelper::DataStorage::ElementId;
-using ElementIdFactory = SpatialHelper::DataStorage::ElementIdFactory;
+using LabelElement = SpatialHelper::DataStorageOsmId::Element;
+using LabelElementId = SpatialHelper::DataStorageOsmId::ElementId;
+using ElementIdFactory = SpatialHelper::DataStorageOsmId::ElementIdFactory;
 
 using OsmId = SpatialHelper::OsmId;
 
 // BEGIN helpers and stuff
 
 namespace {
-struct ID_Mapper
-{
+struct ID_Mapper {
   std::unordered_map<OsmId, LabelElementId> m_map;
 
-  void operator()(LabelElement& elem)
-  {
+  void operator()(LabelElement &elem) {
     m_map.emplace(elem.get_info(), elem.get_id());
   }
 };
 
-struct NN_Extractor
-{
+struct NN_Extractor {
   Distance m_nn_distance = std::numeric_limits<Distance>::max();
+  // TODO: OsmId != UNDEFINED_ID!!!!
   OsmId m_nn_id = ElementIdFactory::UNDEFINED_ID;
-  LabelElement& m_query;
+  LabelElement &m_query;
 
-  NN_Extractor(OsmId query_id, SpatialHelper::DataStorage& storage)
-    : m_query(storage.get(query_id)){};
+  NN_Extractor(OsmId query_id, SpatialHelper::DataStorageOsmId &storage)
+      : m_query(storage.get(query_id)){};
 
   // CAUTION this code might not be thread save
-  void operator()(LabelElement& elem)
-  {
+  void operator()(LabelElement &elem) {
     Distance d = growing_balls::distance_in_centimeters(
-      m_query.get_coord_1(), m_query.get_coord_2(), elem.get_coord_1(),
-      elem.get_coord_2());
+        m_query.get_coord_1(), m_query.get_coord_2(), elem.get_coord_1(),
+        elem.get_coord_2());
     if (d < m_nn_distance) {
       m_nn_distance = d;
       m_nn_id = elem.get_id();
@@ -106,31 +109,27 @@ struct NN_Extractor
   };
 };
 
-struct RangeExplorer
-{
+struct RangeExplorer {
   std::unordered_set<LabelElementId> m_neighbors;
   Distance m_distance_limit;
-  LabelElement& m_query;
+  LabelElement &m_query;
   LabelElementId m_current_id;
-  SpatialHelper::DataStorage& m_storage;
+  SpatialHelper::DataStorageOsmId &m_storage;
 
   RangeExplorer(OsmId query_id, Distance max_dist,
-                SpatialHelper::DataStorage& storage)
-    : m_distance_limit(max_dist)
-    , m_query(storage.get(query_id))
-    , m_current_id(query_id)
-    , m_storage(storage){};
+                SpatialHelper::DataStorageOsmId &storage)
+      : m_distance_limit(max_dist), m_query(storage.get(query_id)),
+        m_current_id(query_id), m_storage(storage){};
 
-  void operator()(LabelElement& elem)
-  {
+  void operator()(LabelElement &elem) {
     LabelElementId elem_id = elem.get_id();
     if (m_neighbors.count(elem_id) != 0 || elem_id == m_query.get_id()) {
       return;
     }
 
     Distance d = growing_balls::distance_in_centimeters(
-      m_query.get_coord_1(), m_query.get_coord_2(), elem.get_coord_1(),
-      elem.get_coord_2());
+        m_query.get_coord_1(), m_query.get_coord_2(), elem.get_coord_1(),
+        elem.get_coord_2());
     if (d <= m_distance_limit) {
       m_neighbors.insert(elem_id);
 
@@ -144,42 +143,52 @@ struct RangeExplorer
 // END helpers and stuff
 
 // BEGIN class SpatialHelper
-SpatialHelper::SpatialHelper(std::vector<POI>& pois)
-{
+SpatialHelper::SpatialHelper(const std::vector<POI> &pois) {
   std::vector<LabelElement> lbl_elems;
   for (auto poi : pois) {
     lbl_elems.emplace_back(poi.get_lat(), poi.get_lon(), poi.get_osm_id());
   }
 
-  m_storage.insert(lbl_elems.begin(), lbl_elems.end());
+  m_dupplicates = m_storage.insert(lbl_elems.begin(), lbl_elems.end());
 
   ID_Mapper mapper;
   m_storage.visit_all(mapper);
-
   m_id_mapper = std::move(mapper.m_map);
 }
 
-SpatialHelper::~SpatialHelper()
-{
+// SpatialHelper::SpatialHelper(SpatialHelper&& other)
+// : m_id_mapper(std::move(other.m_id_mapper))
+// , m_storage(std::move(other.m_storage)){}
+
+SpatialHelper::~SpatialHelper() {
   //   delete(m_storage);
 }
 
-SpatialHelper::OsmId
-SpatialHelper::get_nearest_neighbor(OsmId id)
-{
-  NN_Extractor nn(m_id_mapper.at(id), m_storage);
+// SpatialHelper& SpatialHelper::operator=(SpatialHelper&& other) {
+//   m_id_mapper = std::move(other.m_id_mapper);
+//   m_storage = std::move(other.m_storage);
+//
+//   return *this;
+// }
 
-  m_storage.visit_neighborhood(m_id_mapper.at(id), nn);
+SpatialHelper::OsmId SpatialHelper::get_nearest_neighbor(OsmId id) {
+  auto i_id = m_id_mapper.at(id);
+  NN_Extractor nn(i_id, m_storage);
+
+  m_storage.visit_neighborhood(i_id, nn);
+
+  if (nn.m_nn_id == ElementIdFactory::UNDEFINED_ID) {
+    return UNDEFINED_ID;
+  }
 
   return m_storage.get(nn.m_nn_id).get_info();
 }
 
-std::vector<OsmId>
-SpatialHelper::get_in_range(OsmId id, Distance d)
-{
-  RangeExplorer r_exp(m_id_mapper.at(id), d, m_storage);
+std::vector<OsmId> SpatialHelper::get_in_range(OsmId id, Distance d) {
+  auto i_id = m_id_mapper.at(id);
+  RangeExplorer r_exp(i_id, d, m_storage);
 
-  m_storage.visit_neighborhood(m_id_mapper.at(id), r_exp);
+  m_storage.visit_neighborhood(i_id, r_exp);
 
   std::vector<OsmId> res;
   std::transform(r_exp.m_neighbors.begin(), r_exp.m_neighbors.end(),
@@ -188,6 +197,11 @@ SpatialHelper::get_in_range(OsmId id, Distance d)
                  });
 
   return res;
+}
+
+void SpatialHelper::erase(OsmId id) {
+  m_storage.remove(m_id_mapper.at(id));
+  m_id_mapper.erase(id);
 }
 
 // END class SpatialHelper

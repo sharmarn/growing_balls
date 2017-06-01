@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 project (gbons2)
 find_package(CGAL REQUIRED Core)
@@ -12,13 +13,14 @@ include_directories(
     src/
     src/algorithms/
     src/geofunctions/
-    src/input/
+    src/helpers/
+    src/io/
     src/storage/
 	${LIBDTS2_INCLUDE_DIR}
 )
 
 set(MY_C_FLAGS "${CMAKE_C_FLAGS} -frounding-math -std=c99 -Wall -Wextra -Wno-unknown-pragmas -Wstrict-overflow=4")
-set(MY_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frounding-math -std=gnu++0x -Wall -Wextra -Wno-unknown-pragmas -Wstrict-overflow=4 -Wshadow")
+set(MY_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frounding-math -std=c++11 -Wall -Wextra -Wno-unknown-pragmas -Wstrict-overflow=4 -Wshadow")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MY_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MY_CXX_FLAGS}")
@@ -43,7 +45,8 @@ add_executable(${PROJECT_NAME} ${GBS_ON_S2_SOURCES_CPP})
 
 set(GROWING_BALLS_SOURCES
     src/growing_balls.cpp
-    src/input/textinput.cpp
+    src/helpers/timer.cpp
+    src/io/io.cpp
 )
 
 add_executable(growing_balls ${GROWING_BALLS_SOURCES})
