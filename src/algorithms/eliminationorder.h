@@ -33,8 +33,10 @@
 #include "timer.h"
 
 namespace {
-bool prefer(const growing_balls::IO::PointOfInterest &p1,
-            const growing_balls::IO::PointOfInterest &p2) {
+bool
+prefer(const growing_balls::IO::PointOfInterest& p1,
+       const growing_balls::IO::PointOfInterest& p2)
+{
   return p1.get_priority() > p2.get_priority();
 };
 }
@@ -42,24 +44,28 @@ bool prefer(const growing_balls::IO::PointOfInterest &p1,
 namespace growing_balls {
 using Time = double;
 
-class EliminationOrder {
+class EliminationOrder
+{
 public:
-  struct Elimination {
+  struct Elimination
+  {
     IO::PointOfInterest m_eliminated;
     IO::PointOfInterest m_eliminated_by;
     Time m_elimination_time;
 
-    Elimination(Time elim_t, IO::PointOfInterest elim,
+    Elimination(Time elim_t,
+                IO::PointOfInterest elim,
                 IO::PointOfInterest elim_by)
-        : m_eliminated(std::move(elim)), m_eliminated_by(std::move(elim_by)),
-          m_elimination_time(elim_t){};
+      : m_eliminated(std::move(elim))
+      , m_eliminated_by(std::move(elim_by))
+      , m_elimination_time(elim_t){};
   };
 
 public:
   EliminationOrder() = default;
 
-  EliminationOrder(EliminationOrder &&other) = default;
-  EliminationOrder &operator=(EliminationOrder &&other) = default;
+  EliminationOrder(EliminationOrder&& other) = default;
+  EliminationOrder& operator=(EliminationOrder&& other) = default;
 
   std::vector<Elimination> compute_elimination_order(std::string file);
 
@@ -79,12 +85,14 @@ namespace {
 using ID = IO::OsmId;
 using PoiMap = std::unordered_map<ID, IO::PointOfInterest>;
 
-enum class EventType : int32_t {
+enum class EventType : int32_t
+{
   UPDATE_EVENT = 1,
   COLLISION_EVENT = 2,
 };
 
-struct Event {
+struct Event
+{
   Time m_trigger_time;
   ID m_coll1;
   ID m_coll2;
@@ -92,16 +100,21 @@ struct Event {
   EventType m_evt_type;
 
   Event(Time t, ID c1)
-      : m_trigger_time(t), m_coll1(c1), m_coll2(c1),
-        m_evt_type(EventType::UPDATE_EVENT){};
+    : m_trigger_time(t)
+    , m_coll1(c1)
+    , m_coll2(c1)
+    , m_evt_type(EventType::UPDATE_EVENT){};
 
   Event(Time t, ID c1, ID c2)
-      : m_trigger_time(t), m_coll1(c1), m_coll2(c2),
-        m_evt_type(EventType::COLLISION_EVENT){};
+    : m_trigger_time(t)
+    , m_coll1(c1)
+    , m_coll2(c2)
+    , m_evt_type(EventType::COLLISION_EVENT){};
 
   // In order to use a priority_queue (a max heap) as min heap: overload
   // operator <
-  bool operator<(const Event &other) const {
+  bool operator<(const Event& other) const
+  {
     if (m_trigger_time == other.m_trigger_time) {
       if (m_evt_type == EventType::UPDATE_EVENT) {
         // update events are prefered to collision events
@@ -120,27 +133,33 @@ struct Event {
   }
 };
 
-Time compute_collision_time(const IO::PointOfInterest &p1,
-                            const IO::PointOfInterest &p2) {
-  auto d = distance_in_centimeters(p1.get_lat(), p1.get_lon(), p2.get_lat(),
-                                   p2.get_lon());
+Time
+compute_collision_time(const IO::PointOfInterest& p1,
+                       const IO::PointOfInterest& p2)
+{
+  auto d = distance_in_centimeters(
+    p1.get_lat(), p1.get_lon(), p2.get_lat(), p2.get_lon());
 
   return d / (p1.get_radius() + p2.get_radius());
 }
 
-Event predict_collision(const IO::PointOfInterest &p, Time t, SpatialHelper &sh,
-                        const PoiMap &poi_map) {
+Event
+predict_collision(const IO::PointOfInterest& p,
+                  Time t,
+                  SpatialHelper& sh,
+                  const PoiMap& poi_map)
+{
   auto id_nn = sh.get_nearest_neighbor(p.get_osm_id());
 
   if (id_nn == sh.UNDEFINED_ID) {
-    return Event(std::numeric_limits<Time>::max(), p.get_osm_id(),
-                 p.get_osm_id());
+    return Event(
+      std::numeric_limits<Time>::max(), p.get_osm_id(), p.get_osm_id());
   }
 
-  auto &nn = poi_map.at(id_nn);
+  auto& nn = poi_map.at(id_nn);
 
-  auto distance_pnn = distance_in_centimeters(p.get_lat(), p.get_lon(),
-                                              nn.get_lat(), nn.get_lon());
+  auto distance_pnn = distance_in_centimeters(
+    p.get_lat(), p.get_lon(), nn.get_lat(), nn.get_lon());
   Time t_upd = distance_pnn / (2 * p.get_radius());
 
   if (t < t_upd) {
@@ -149,7 +168,7 @@ Event predict_collision(const IO::PointOfInterest &p, Time t, SpatialHelper &sh,
     Time min_coll_t = std::numeric_limits<Time>::max();
     OsmId min_coll_p = 0;
     for (auto id : sh.get_in_range(p.get_osm_id(), 2 * distance_pnn)) {
-      auto &p2 = poi_map.at(id);
+      auto& p2 = poi_map.at(id);
 
       Time coll_t = compute_collision_time(p, p2);
       if (coll_t < min_coll_t) {
@@ -167,7 +186,8 @@ Event predict_collision(const IO::PointOfInterest &p, Time t, SpatialHelper &sh,
 // BEGIN class EliminationOrder
 
 std::vector<EliminationOrder::Elimination>
-EliminationOrder::compute_elimination_order(std::string file) {
+EliminationOrder::compute_elimination_order(std::string file)
+{
   debug_timer::Timer timer;
   timer.start();
   auto labels = IO::import_label(file);
@@ -177,14 +197,15 @@ EliminationOrder::compute_elimination_order(std::string file) {
 
   timer.createTimepoint();
   std::unordered_map<IO::OsmId, IO::PointOfInterest> pois;
-  std::transform(labels.begin(), labels.end(),
+  std::transform(labels.begin(),
+                 labels.end(),
                  std::inserter(pois, pois.begin()),
-                 [](IO::PointOfInterest &poi) {
+                 [](IO::PointOfInterest& poi) {
                    return std::make_pair(poi.get_osm_id(), std::move(poi));
                  });
 
   // remove dupplicated pois
-  for (auto &d : spatial_helper.get_dupplicates()) {
+  for (auto& d : spatial_helper.get_dupplicates()) {
     auto dupplicate = pois.find(d);
     std::cout << "Ignoring dupplicated poi: " << dupplicate->second.print()
               << std::endl;
@@ -198,7 +219,7 @@ EliminationOrder::compute_elimination_order(std::string file) {
 
   timer.createTimepoint();
   // initialize
-  for (const auto &p : pois) {
+  for (const auto& p : pois) {
     Event evt = predict_collision(p.second, 0., spatial_helper, pois);
 
     assert(evt.m_evt_type == EventType::UPDATE_EVENT);

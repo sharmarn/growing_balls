@@ -26,7 +26,8 @@
 
 namespace growing_balls {
 
-class IO {
+class IO
+{
 public:
   using Coord_Lat = double;
   using Coord_Lon = double;
@@ -40,7 +41,8 @@ public:
   using ElimTime = double;
 
 public:
-  class PointOfInterest {
+  class PointOfInterest
+  {
     // position
     Coord_Lat m_lat;
     Coord_Lon m_lon;
@@ -56,10 +58,20 @@ public:
     OsmId m_elim_partner;
 
   public:
-    PointOfInterest(Coord_Lat lat, Coord_Lon lon, FontFactor f_fac, Label lbl,
-                    OsmId id, Priority prio, Radius rad)
-        : m_lat(lat), m_lon(lon), m_font_fac(f_fac), m_label(lbl), m_osmid(id),
-          m_priority(prio), m_radius(rad){};
+    PointOfInterest(Coord_Lat lat,
+                    Coord_Lon lon,
+                    FontFactor f_fac,
+                    Label lbl,
+                    OsmId id,
+                    Priority prio,
+                    Radius rad)
+      : m_lat(lat)
+      , m_lon(lon)
+      , m_font_fac(f_fac)
+      , m_label(lbl)
+      , m_osmid(id)
+      , m_priority(prio)
+      , m_radius(rad){};
 
     /**
      * parses a string of the following form and initializes the PointOfInterest
@@ -82,8 +94,8 @@ public:
   };
 
   static std::vector<PointOfInterest> import_label(std::string input_file);
-  static bool export_eliminationorder(std::string &export_file,
-                                      std::vector<PointOfInterest> &pois);
+  static bool export_eliminationorder(std::string& export_file,
+                                      std::vector<PointOfInterest>& pois);
 };
 }
 

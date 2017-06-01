@@ -30,7 +30,9 @@ namespace growing_balls {
 
 // BEGIN class PointOfInterest
 IO::PointOfInterest::PointOfInterest(std::string input_str)
-    : m_elim_t(0), m_elim_partner() {
+  : m_elim_t(0)
+  , m_elim_partner()
+{
   std::stringstream ss(input_str);
   std::string first, second, last;
   std::getline(ss, first, '\'');
@@ -44,7 +46,9 @@ IO::PointOfInterest::PointOfInterest(std::string input_str)
   ss_last >> m_font_fac;
 }
 
-std::string IO::PointOfInterest::print() const {
+std::string
+IO::PointOfInterest::print() const
+{
   std::stringstream ss_result;
 
   ss_result.precision(22);
@@ -54,7 +58,9 @@ std::string IO::PointOfInterest::print() const {
   return ss_result.str();
 }
 
-void IO::PointOfInterest::set_elimination(ElimTime elim_t, OsmId elim_p) {
+void
+IO::PointOfInterest::set_elimination(ElimTime elim_t, OsmId elim_p)
+{
   m_elim_t = elim_t;
   m_elim_partner = elim_p;
 }
@@ -62,8 +68,10 @@ void IO::PointOfInterest::set_elimination(ElimTime elim_t, OsmId elim_p) {
 
 // BEGIN class IO
 
-bool IO::export_eliminationorder(std::string &export_file,
-                                 std::vector<IO::PointOfInterest> &pois) {
+bool
+IO::export_eliminationorder(std::string& export_file,
+                            std::vector<IO::PointOfInterest>& pois)
+{
   std::ofstream outFile(export_file);
   if (!outFile) {
     std::cerr << "File " << export_file << " could not be opened!" << std::endl;
@@ -74,7 +82,7 @@ bool IO::export_eliminationorder(std::string &export_file,
   outFile << pois.size() << std::endl;
 
   outFile << std::setprecision(std::numeric_limits<long double>::digits10 + 1);
-  for (auto &poi : pois) {
+  for (auto& poi : pois) {
     outFile << poi.get_lat() << ' ' << poi.get_lon() << ' ' << poi.get_osm_id()
             << ' ' << poi.get_priority() << ' ' << poi.get_elim_time() << ' '
             << poi.get_radius() << ' ' << poi.get_font_factor() << ' '
@@ -83,7 +91,9 @@ bool IO::export_eliminationorder(std::string &export_file,
   return true;
 }
 
-std::vector<IO::PointOfInterest> IO::import_label(std::string input_file) {
+std::vector<IO::PointOfInterest>
+IO::import_label(std::string input_file)
+{
   std::vector<PointOfInterest> result;
   std::ifstream inFile(input_file);
   if (!inFile) {
