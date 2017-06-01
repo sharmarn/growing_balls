@@ -58,8 +58,13 @@ public:
     OsmId m_elim_partner;
 
   public:
-    PointOfInterest(Coord_Lat lat, Coord_Lon lon, FontFactor f_fac, Label lbl,
-                    OsmId id, Priority prio, Radius rad)
+    PointOfInterest(Coord_Lat lat,
+                    Coord_Lon lon,
+                    FontFactor f_fac,
+                    Label lbl,
+                    OsmId id,
+                    Priority prio,
+                    Radius rad)
       : m_lat(lat)
       , m_lon(lon)
       , m_font_fac(f_fac)

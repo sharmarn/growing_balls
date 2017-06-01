@@ -53,7 +53,8 @@ public:
     IO::PointOfInterest m_eliminated_by;
     Time m_elimination_time;
 
-    Elimination(Time elim_t, IO::PointOfInterest elim,
+    Elimination(Time elim_t,
+                IO::PointOfInterest elim,
                 IO::PointOfInterest elim_by)
       : m_eliminated(std::move(elim))
       , m_eliminated_by(std::move(elim_by))
@@ -136,27 +137,29 @@ Time
 compute_collision_time(const IO::PointOfInterest& p1,
                        const IO::PointOfInterest& p2)
 {
-  auto d = distance_in_centimeters(p1.get_lat(), p1.get_lon(), p2.get_lat(),
-                                   p2.get_lon());
+  auto d = distance_in_centimeters(
+    p1.get_lat(), p1.get_lon(), p2.get_lat(), p2.get_lon());
 
   return d / (p1.get_radius() + p2.get_radius());
 }
 
 Event
-predict_collision(const IO::PointOfInterest& p, Time t, SpatialHelper& sh,
+predict_collision(const IO::PointOfInterest& p,
+                  Time t,
+                  SpatialHelper& sh,
                   const PoiMap& poi_map)
 {
   auto id_nn = sh.get_nearest_neighbor(p.get_osm_id());
 
   if (id_nn == sh.UNDEFINED_ID) {
-    return Event(std::numeric_limits<Time>::max(), p.get_osm_id(),
-                 p.get_osm_id());
+    return Event(
+      std::numeric_limits<Time>::max(), p.get_osm_id(), p.get_osm_id());
   }
 
   auto& nn = poi_map.at(id_nn);
 
-  auto distance_pnn = distance_in_centimeters(p.get_lat(), p.get_lon(),
-                                              nn.get_lat(), nn.get_lon());
+  auto distance_pnn = distance_in_centimeters(
+    p.get_lat(), p.get_lon(), nn.get_lat(), nn.get_lon());
   Time t_upd = distance_pnn / (2 * p.get_radius());
 
   if (t < t_upd) {
@@ -194,7 +197,8 @@ EliminationOrder::compute_elimination_order(std::string file)
 
   timer.createTimepoint();
   std::unordered_map<IO::OsmId, IO::PointOfInterest> pois;
-  std::transform(labels.begin(), labels.end(),
+  std::transform(labels.begin(),
+                 labels.end(),
                  std::inserter(pois, pois.begin()),
                  [](IO::PointOfInterest& poi) {
                    return std::make_pair(poi.get_osm_id(), std::move(poi));

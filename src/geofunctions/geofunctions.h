@@ -42,7 +42,9 @@ haversine(double p1_lat, double p1_lon, double p2_lat, double p2_lon)
  * - lon is in range [-180, 180]
  */
 Distance
-distance_in_centimeters(double p1_lat, double p1_lon, double p2_lat,
+distance_in_centimeters(double p1_lat,
+                        double p1_lon,
+                        double p2_lat,
                         double p2_lon)
 {
   double tmp =

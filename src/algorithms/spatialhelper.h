@@ -104,9 +104,10 @@ struct NN_Extractor
   // CAUTION this code might not be thread save
   void operator()(LabelElement& elem)
   {
-    Distance d = growing_balls::distance_in_centimeters(
-      m_query.get_coord_1(), m_query.get_coord_2(), elem.get_coord_1(),
-      elem.get_coord_2());
+    Distance d = growing_balls::distance_in_centimeters(m_query.get_coord_1(),
+                                                        m_query.get_coord_2(),
+                                                        elem.get_coord_1(),
+                                                        elem.get_coord_2());
     if (d < m_nn_distance) {
       m_nn_distance = d;
       m_nn_id = elem.get_id();
@@ -122,7 +123,8 @@ struct RangeExplorer
   LabelElementId m_current_id;
   SpatialHelper::DataStorageOsmId& m_storage;
 
-  RangeExplorer(OsmId query_id, Distance max_dist,
+  RangeExplorer(OsmId query_id,
+                Distance max_dist,
                 SpatialHelper::DataStorageOsmId& storage)
     : m_distance_limit(max_dist)
     , m_query(storage.get(query_id))
@@ -136,9 +138,10 @@ struct RangeExplorer
       return;
     }
 
-    Distance d = growing_balls::distance_in_centimeters(
-      m_query.get_coord_1(), m_query.get_coord_2(), elem.get_coord_1(),
-      elem.get_coord_2());
+    Distance d = growing_balls::distance_in_centimeters(m_query.get_coord_1(),
+                                                        m_query.get_coord_2(),
+                                                        elem.get_coord_1(),
+                                                        elem.get_coord_2());
     if (d <= m_distance_limit) {
       m_neighbors.insert(elem_id);
 
@@ -206,8 +209,10 @@ SpatialHelper::get_in_range(OsmId id, Distance d)
   m_storage.visit_neighborhood(i_id, r_exp);
 
   std::vector<OsmId> res;
-  std::transform(r_exp.m_neighbors.begin(), r_exp.m_neighbors.end(),
-                 std::back_inserter(res), [this](LabelElementId elem_id) {
+  std::transform(r_exp.m_neighbors.begin(),
+                 r_exp.m_neighbors.end(),
+                 std::back_inserter(res),
+                 [this](LabelElementId elem_id) {
                    return m_storage.get(elem_id).get_info();
                  });
 
