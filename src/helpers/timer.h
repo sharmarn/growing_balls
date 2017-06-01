@@ -24,7 +24,8 @@
 
 namespace debug_timer {
 
-class Timer {
+class Timer
+{
 private:
   // ---- private class data ----
   std::chrono::time_point<std::chrono::system_clock> mStart;
@@ -49,9 +50,9 @@ public:
 
 private:
   // ---- private functions ----
-  double
-  computeDifference(std::chrono::time_point<std::chrono::system_clock> &t1,
-                    std::chrono::time_point<std::chrono::system_clock> &t2);
+  double computeDifference(
+    std::chrono::time_point<std::chrono::system_clock>& t1,
+    std::chrono::time_point<std::chrono::system_clock>& t2);
 };
 }
 

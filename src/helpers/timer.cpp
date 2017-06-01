@@ -17,13 +17,19 @@
 
 #include "timer.h"
 
-debug_timer::Timer::Timer() {}
+debug_timer::Timer::Timer()
+{
+}
 
-void debug_timer::Timer::createTimepoint() {
+void
+debug_timer::Timer::createTimepoint()
+{
   mTimepoints.push_back(std::chrono::system_clock::now());
 }
 
-std::vector<double> debug_timer::Timer::getTimes() {
+std::vector<double>
+debug_timer::Timer::getTimes()
+{
   std::vector<double> result;
 
   if (mTimepoints.size() == 0) {
@@ -44,17 +50,29 @@ std::vector<double> debug_timer::Timer::getTimes() {
   return result;
 }
 
-double debug_timer::Timer::getTotal() {
+double
+debug_timer::Timer::getTotal()
+{
   return computeDifference(mStart, mEnd);
 }
 
-void debug_timer::Timer::start() { mStart = std::chrono::system_clock::now(); }
+void
+debug_timer::Timer::start()
+{
+  mStart = std::chrono::system_clock::now();
+}
 
-void debug_timer::Timer::stop() { mEnd = std::chrono::system_clock::now(); }
+void
+debug_timer::Timer::stop()
+{
+  mEnd = std::chrono::system_clock::now();
+}
 
-double debug_timer::Timer::computeDifference(
-    std::chrono::time_point<std::chrono::_V2::system_clock> &t1,
-    std::chrono::time_point<std::chrono::_V2::system_clock> &t2) {
+double
+debug_timer::Timer::computeDifference(
+  std::chrono::time_point<std::chrono::_V2::system_clock>& t1,
+  std::chrono::time_point<std::chrono::_V2::system_clock>& t2)
+{
   std::chrono::duration<double, std::milli> difference = t2 - t1;
 
   return difference.count();
