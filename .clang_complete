@@ -1,0 +1,8 @@
+-Isrc
+-Isrc/algorithms
+-Isrc/geofunctions
+-Isrc/input
+-Isrc/storage
+-Ivendor
+-Ivendor/libdts2/include/libdts2
+-Ivendor/libdts2/vendor/libratss/include/libratss
