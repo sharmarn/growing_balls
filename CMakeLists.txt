@@ -37,11 +37,11 @@ SET(MY_LIB_LINK_LIBS
 	${CGAL_3RD_PARTY_LIBRARIES}
 )
 
-set(GBS_ON_S2_SOURCES_CPP
-	src/gbons2.cpp
-)
-
-add_executable(${PROJECT_NAME} ${GBS_ON_S2_SOURCES_CPP})
+#set(GBS_ON_S2_SOURCES_CPP
+#	src/gbons2.cpp
+#)
+#
+#add_executable(${PROJECT_NAME} ${GBS_ON_S2_SOURCES_CPP})
 
 set(GROWING_BALLS_SOURCES
     src/growing_balls.cpp
