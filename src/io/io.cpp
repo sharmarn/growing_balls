@@ -83,15 +83,15 @@ IO::export_eliminationorder(std::string& export_file,
   outFile << pois.size() << std::endl;
 
   // write the column header
-  outFile << "lat lon osm_id priority collision_time radius font_factor label\n"
+  outFile << "lat lon osm_id priority collision_time radius font_factor label"
           << std::endl;
 
   outFile << std::setprecision(std::numeric_limits<long double>::digits10 + 1);
   for (auto& poi : pois) {
-    outFile << poi.get_lat() << ' ' << poi.get_lon() << ' ' << poi.get_osm_id()
-            << ' ' << poi.get_priority() << ' ' << poi.get_elim_time() << ' '
-            << poi.get_radius() << ' ' << poi.get_font_factor() << ' '
-            << poi.get_label() << std::endl;
+    outFile << poi.get_lat() << " " << poi.get_lon() << " " << poi.get_osm_id()
+            << ' ' << poi.get_priority() << " " << poi.get_elim_time() << " "
+            << poi.get_radius() << " " << poi.get_font_factor() << " '"
+            << poi.get_label() << "'" << std::endl;
   }
   return true;
 }
