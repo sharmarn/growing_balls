@@ -83,7 +83,7 @@ IO::export_eliminationorder(std::string& export_file,
   outFile << pois.size() << std::endl;
 
   // write the column header
-  outfile << "lat lon osm_id priority collision_time radius font_factor label\n"
+  outFile << "lat lon osm_id priority collision_time radius font_factor label\n"
           << std::endl;
 
   outFile << std::setprecision(std::numeric_limits<long double>::digits10 + 1);
