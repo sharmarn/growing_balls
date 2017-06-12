@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <assert.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -14,8 +16,9 @@ main(int argc, char** argv)
     return 1;
   }
 
+  std::string input_path(argv[1]);
   growing_balls::EliminationOrder eo;
-  auto es = eo.compute_elimination_order(argv[1]);
+  auto es = eo.compute_elimination_order(input_path);
 
   std::vector<growing_balls::IO::PointOfInterest> elimination_order;
   for (auto& e : es) {
@@ -27,6 +30,15 @@ main(int argc, char** argv)
     elimination_order.push_back(std::move(poi));
   }
 
-  std::string out_path = "elim_out.raw";
-  growing_balls::IO::export_eliminationorder(out_path, elimination_order);
+  std::string output_path = input_path;
+  if (input_path.find(".complete.txt")) {
+    // replace the old ending '.complete.txt' by .ce
+    auto pos = output_path.rfind(".complete.txt");
+    assert(pos != std::string::npos);
+    output_path.replace(pos, std::string::npos, ".ce");
+  } else {
+    output_path = output_path + ".ce";
+  }
+
+  growing_balls::IO::export_eliminationorder(output_path, elimination_order);
 }
