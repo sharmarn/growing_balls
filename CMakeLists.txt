@@ -15,6 +15,7 @@ include_directories(
 	src/geofunctions/
 	src/helpers/
 	src/io/
+	src/primitives/
 	src/storage/
 	${LIBDTS2_INCLUDE_DIR}
 	)
@@ -47,6 +48,7 @@ set(GROWING_BALLS_SOURCES
 	src/growing_balls.cpp
 	src/helpers/timer.cpp
 	src/io/io.cpp
+	src/primitives/pointofinterest.cpp
 	)
 
 add_executable(growing_balls ${GROWING_BALLS_SOURCES})
