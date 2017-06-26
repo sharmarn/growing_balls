@@ -6,6 +6,7 @@
 
 #include "eliminationorder.h"
 #include "io.h"
+#include "pointofinterest.h"
 
 int
 main(int argc, char** argv)
@@ -20,7 +21,7 @@ main(int argc, char** argv)
   growing_balls::EliminationOrder eo;
   auto es = eo.compute_elimination_order(input_path);
 
-  std::vector<growing_balls::IO::PointOfInterest> elimination_order;
+  std::vector<growing_balls::PointOfInterest> elimination_order;
   for (auto& e : es) {
     auto et = e.m_elimination_time;
     auto poi = e.m_eliminated;

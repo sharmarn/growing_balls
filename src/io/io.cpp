@@ -28,49 +28,11 @@
 
 namespace growing_balls {
 
-// BEGIN class PointOfInterest
-IO::PointOfInterest::PointOfInterest(std::string input_str)
-  : m_elim_t(0)
-  , m_elim_partner()
-{
-  std::stringstream ss(input_str);
-  std::string first, second, last;
-  std::getline(ss, first, '\'');
-  std::getline(ss, second, '\'');
-  std::getline(ss, last);
-
-  m_label = second;
-  std::stringstream ss_first(first);
-  ss_first >> m_lat >> m_lon >> m_priority >> m_radius >> m_osmid;
-  std::stringstream ss_last(last);
-  ss_last >> m_font_fac;
-}
-
-std::string
-IO::PointOfInterest::print() const
-{
-  std::stringstream ss_result;
-
-  ss_result.precision(22);
-  ss_result << m_lat << " " << m_lon << " " << m_priority << " " << m_osmid
-            << " '" << m_label << "' " << m_font_fac;
-
-  return ss_result.str();
-}
-
-void
-IO::PointOfInterest::set_elimination(ElimTime elim_t, OsmId elim_p)
-{
-  m_elim_t = elim_t;
-  m_elim_partner = elim_p;
-}
-// END class PointOfInterest
-
 // BEGIN class IO
 
 bool
 IO::export_eliminationorder(std::string& export_file,
-                            std::vector<IO::PointOfInterest>& pois)
+                            std::vector<PointOfInterest>& pois)
 {
   std::ofstream outFile(export_file);
   if (!outFile) {
@@ -96,7 +58,7 @@ IO::export_eliminationorder(std::string& export_file,
   return true;
 }
 
-std::vector<IO::PointOfInterest>
+std::vector<PointOfInterest>
 IO::import_label(std::string input_file)
 {
   std::vector<PointOfInterest> result;

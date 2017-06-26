@@ -27,6 +27,7 @@
 #include "datastorage.h"
 #include "geofunctions.h"
 #include "io.h"
+#include "pointofinterest.h"
 
 namespace growing_balls {
 
@@ -34,8 +35,7 @@ class SpatialHelper
 {
 public:
   using IO = growing_balls::IO;
-  using OsmId = IO::OsmId;
-  using POI = IO::PointOfInterest;
+  using POI = PointOfInterest;
 
   using DataStorageOsmId = DataStorage<OsmId>;
 
@@ -75,8 +75,6 @@ using Distance = growing_balls::Distance;
 using LabelElement = SpatialHelper::DataStorageOsmId::Element;
 using LabelElementId = SpatialHelper::DataStorageOsmId::ElementId;
 using ElementIdFactory = SpatialHelper::DataStorageOsmId::ElementIdFactory;
-
-using OsmId = SpatialHelper::OsmId;
 
 // BEGIN helpers and stuff
 
@@ -185,7 +183,7 @@ SpatialHelper::~SpatialHelper()
 //   return *this;
 // }
 
-SpatialHelper::OsmId
+OsmId
 SpatialHelper::get_nearest_neighbor(OsmId id)
 {
   auto i_id = m_id_mapper.at(id);

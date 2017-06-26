@@ -29,33 +29,32 @@
 
 #include "geofunctions.h"
 #include "io.h"
+#include "pointofinterest.h"
 #include "spatialhelper.h"
 #include "timer.h"
 
 namespace {
 bool
-prefer(const growing_balls::IO::PointOfInterest& p1,
-       const growing_balls::IO::PointOfInterest& p2)
+prefer(const growing_balls::PointOfInterest& p1,
+       const growing_balls::PointOfInterest& p2)
 {
   return p1.get_priority() > p2.get_priority();
 };
 }
 
 namespace growing_balls {
-using Time = double;
+using Time = ElimTime;
 
 class EliminationOrder
 {
 public:
   struct Elimination
   {
-    IO::PointOfInterest m_eliminated;
-    IO::PointOfInterest m_eliminated_by;
+    PointOfInterest m_eliminated;
+    PointOfInterest m_eliminated_by;
     Time m_elimination_time;
 
-    Elimination(Time elim_t,
-                IO::PointOfInterest elim,
-                IO::PointOfInterest elim_by)
+    Elimination(Time elim_t, PointOfInterest elim, PointOfInterest elim_by)
       : m_eliminated(std::move(elim))
       , m_eliminated_by(std::move(elim_by))
       , m_elimination_time(elim_t){};
@@ -82,8 +81,8 @@ namespace growing_balls {
 
 // BEGIN Helpers
 namespace {
-using ID = IO::OsmId;
-using PoiMap = std::unordered_map<ID, IO::PointOfInterest>;
+using ID = OsmId;
+using PoiMap = std::unordered_map<ID, PointOfInterest>;
 
 enum class EventType : int32_t
 {
@@ -134,8 +133,7 @@ struct Event
 };
 
 Time
-compute_collision_time(const IO::PointOfInterest& p1,
-                       const IO::PointOfInterest& p2)
+compute_collision_time(const PointOfInterest& p1, const PointOfInterest& p2)
 {
   auto d = distance_in_centimeters(
     p1.get_lat(), p1.get_lon(), p2.get_lat(), p2.get_lon());
@@ -144,7 +142,7 @@ compute_collision_time(const IO::PointOfInterest& p1,
 }
 
 Event
-predict_collision(const IO::PointOfInterest& p,
+predict_collision(const PointOfInterest& p,
                   Time t,
                   SpatialHelper& sh,
                   const PoiMap& poi_map)
@@ -196,11 +194,11 @@ EliminationOrder::compute_elimination_order(std::string file)
   SpatialHelper spatial_helper(labels);
 
   timer.createTimepoint();
-  std::unordered_map<IO::OsmId, IO::PointOfInterest> pois;
+  std::unordered_map<OsmId, PointOfInterest> pois;
   std::transform(labels.begin(),
                  labels.end(),
                  std::inserter(pois, pois.begin()),
-                 [](IO::PointOfInterest& poi) {
+                 [](PointOfInterest& poi) {
                    return std::make_pair(poi.get_osm_id(), std::move(poi));
                  });
 
