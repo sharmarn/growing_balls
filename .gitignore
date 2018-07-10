@@ -1,5 +1,4 @@
 build/
 resources/
-*.kdev*/*
-*.kdev4
-*.kdev
+*~
+.vscode/
