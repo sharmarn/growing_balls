@@ -17,7 +17,7 @@ include_directories(
 	src/io/
 	src/primitives/
 	src/storage/
-	${LIBDTS2_INCLUDE_DIR}
+	# ${LIBDTS2_INCLUDE_DIR}
 	)
 
 set(MY_C_FLAGS "${CMAKE_C_FLAGS} -frounding-math -std=c99 -Wall -Wextra -Wno-unknown-pragmas -Wstrict-overflow=4")
@@ -31,11 +31,12 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${DEBUG_FLAGS}
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${DEBUG_FLAGS}")
 
 SET(MY_LIB_LINK_LIBS
-	${LIBRT_LIBRARIES}
-	${LIBDTS2_LIBRARIES}
-	${LIBDTS2_LINK_LIBRARIES}
-	${CGAL_LIBRARIES}
-	${CGAL_3RD_PARTY_LIBRARIES}
+	dts2
+	# ${LIBRT_LIBRARIES}
+	# ${LIBDTS2_LIBRARIES}
+	# ${LIBDTS2_LINK_LIBRARIES}
+	# ${CGAL_LIBRARIES}
+	# ${CGAL_3RD_PARTY_LIBRARIES}
 	)
 
 #set(GBS_ON_S2_SOURCES_CPP
@@ -59,4 +60,4 @@ add_executable(growing_balls ${GROWING_BALLS_SOURCES})
 
 target_link_libraries(growing_balls ${MY_LIB_LINK_LIBS})
 add_dependencies(growing_balls dts2)
-target_compile_definitions(growing_balls PUBLIC ${LIBDTS2_COMPILE_DEFINITIONS})
+# target_compile_definitions(growing_balls PUBLIC ${LIBDTS2_COMPILE_DEFINITIONS})
