@@ -70,8 +70,9 @@ IO::import_label(std::string input_file)
     return result;
   }
 
-  std::size_t total;
-  inFile >> total;
+  std::string header;
+  std::getline(inFile, header);
+  std::size_t total = std::stol(header);
   for (std::string line; std::getline(inFile, line);) {
     if (line.size() > 0 && line.at(0) != '#') {
       result.emplace_back(line);
