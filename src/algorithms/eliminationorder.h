@@ -34,60 +34,77 @@
 #include "timer.h"
 
 namespace {
-// Index 1 -> preference through radius, Index 2 ->
-// preference through font size
-bool choose_heuristic[2] = { 0, 0 };
 
-bool
-prefer_p1(const growing_balls::PointOfInterest& p1,
-          const growing_balls::PointOfInterest& p2)
+enum class Heuristic : int32_t
 {
-  return p1.get_priority() > p2.get_priority();
+  HEURISTIC_DEFAULT = 0,
+  HEURISTIC_RADIUS = 1,
+  HEURISTIC_RANDOM = 2
 };
 
-bool
-prefer_p2(const growing_balls::PointOfInterest& p1,
-          const growing_balls::PointOfInterest& p2)
-{
-  return p1.get_priority() < p2.get_priority();
-};
+Heuristic choose_heuristic = Heuristic::HEURISTIC_DEFAULT;
 
 bool
 prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
                          const growing_balls::PointOfInterest& p2)
 {
-  return p1.get_radius() > p2.get_radius(); //osm_id
+  if (p1.get_radius() > p2.get_radius()) {
+    return true;
+  }
+
+  else if (p1.get_radius() == p2.get_radius()) {
+    if (p1.get_osm_id() > p2.get_osm_id()) {
+      return true;
+    }
+
+    else
+      return false;
+  }
+
+  else
+    return false;
 };
 
+// Always prefer the centre with greater osm ID.
 bool
-prefer_p1_through_label_size(const growing_balls::PointOfInterest& p1,
-                             const growing_balls::PointOfInterest& p2)
+prefer_randomly(const growing_balls::PointOfInterest& p1,
+                const growing_balls::PointOfInterest& p2)
 {
-  if (p1.get_label_size() > p2.get_label_size()) {
-    std::cout << p2.get_label() << " eliminated by " << p1.get_label()
-              << std::endl;
-    return true;
-  } else {
-    std::cout << p1.get_label() << p1.get_label_size() << " eliminated by "
-              << p2.get_label() << p2.get_label_size() << std::endl;
-    return false;
-  }
-  // return p1.get_label_size() > p2.get_label_size();
+  return p1.get_osm_id() > p2.get_osm_id();
 };
 
 bool
 use_heuristic(const growing_balls::PointOfInterest& p1,
               const growing_balls::PointOfInterest& p2)
 {
-  if (p1.get_priority() == p2.get_priority()) { //assert
-    if (choose_heuristic[0] == true && choose_heuristic[1] == false) {
-      return prefer_p1_through_radius(p1, p2);
-    } else if (choose_heuristic[0] == false && choose_heuristic[1] == true) {
-      return prefer_p1_through_label_size(p1, p2);
-    } else {
-      return false;
-    }
-  } else
+  assert(p1.get_priority() == p2.get_priority());
+
+  if (choose_heuristic == Heuristic::HEURISTIC_RADIUS) {
+    return prefer_p1_through_radius(p1, p2);
+  }
+
+  else if (choose_heuristic == Heuristic::HEURISTIC_RANDOM) {
+    return prefer_randomly(p1, p2);
+  }
+
+  else {
+    return false;
+  }
+};
+
+bool
+prefer_p1(const growing_balls::PointOfInterest& p1,
+          const growing_balls::PointOfInterest& p2)
+{
+  if (p1.get_priority() > p2.get_priority()) {
+    return true;
+  }
+
+  else if (p1.get_priority() == p2.get_priority()) {
+    return use_heuristic(p1, p2);
+  }
+
+  else
     return false;
 };
 }
@@ -297,21 +314,6 @@ EliminationOrder::compute_elimination_order(std::string file)
           // here p1 and p2 are alive
           if (prefer_p1(p1->second, p2->second)) {
             //             result.emplace_back(coll_t, std::move(p2->second));
-            result.emplace_back(t, p2->second, p1->second);
-            spatial_helper.erase(p2->first);
-            pois.erase(p2);
-
-            auto evt = predict_collision(p1->second, t, spatial_helper, pois);
-            Q.push(evt);
-          } else if (prefer_p2(p1->second, p2->second)) {
-            //             result.emplace_back(coll_t, std::move(p1->second));
-            result.emplace_back(t, p1->second, p2->second);
-            spatial_helper.erase(p1->first);
-            pois.erase(p1);
-
-            auto evt = predict_collision(p2->second, t, spatial_helper, pois);
-            Q.push(evt);
-          } else if (use_heuristic(p1->second, p2->second)) {
             result.emplace_back(t, p2->second, p1->second);
             spatial_helper.erase(p2->first);
             pois.erase(p2);
