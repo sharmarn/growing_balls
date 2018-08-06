@@ -34,11 +34,61 @@
 #include "timer.h"
 
 namespace {
+// Index 1 -> preference through radius, Index 2 ->
+// preference through font size
+bool choose_heuristic[2] = { 0, 0 };
+
 bool
-prefer(const growing_balls::PointOfInterest& p1,
-       const growing_balls::PointOfInterest& p2)
+prefer_p1(const growing_balls::PointOfInterest& p1,
+          const growing_balls::PointOfInterest& p2)
 {
   return p1.get_priority() > p2.get_priority();
+};
+
+bool
+prefer_p2(const growing_balls::PointOfInterest& p1,
+          const growing_balls::PointOfInterest& p2)
+{
+  return p1.get_priority() < p2.get_priority();
+};
+
+bool
+prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
+                         const growing_balls::PointOfInterest& p2)
+{
+  return p1.get_radius() > p2.get_radius(); //osm_id
+};
+
+bool
+prefer_p1_through_label_size(const growing_balls::PointOfInterest& p1,
+                             const growing_balls::PointOfInterest& p2)
+{
+  if (p1.get_label_size() > p2.get_label_size()) {
+    std::cout << p2.get_label() << " eliminated by " << p1.get_label()
+              << std::endl;
+    return true;
+  } else {
+    std::cout << p1.get_label() << p1.get_label_size() << " eliminated by "
+              << p2.get_label() << p2.get_label_size() << std::endl;
+    return false;
+  }
+  // return p1.get_label_size() > p2.get_label_size();
+};
+
+bool
+use_heuristic(const growing_balls::PointOfInterest& p1,
+              const growing_balls::PointOfInterest& p2)
+{
+  if (p1.get_priority() == p2.get_priority()) { //assert
+    if (choose_heuristic[0] == true && choose_heuristic[1] == false) {
+      return prefer_p1_through_radius(p1, p2);
+    } else if (choose_heuristic[0] == false && choose_heuristic[1] == true) {
+      return prefer_p1_through_label_size(p1, p2);
+    } else {
+      return false;
+    }
+  } else
+    return false;
 };
 }
 
@@ -245,7 +295,7 @@ EliminationOrder::compute_elimination_order(std::string file)
         auto p2 = pois.find(current_evt.m_coll2);
         if (p2 != pois.end()) {
           // here p1 and p2 are alive
-          if (prefer(p1->second, p2->second)) {
+          if (prefer_p1(p1->second, p2->second)) {
             //             result.emplace_back(coll_t, std::move(p2->second));
             result.emplace_back(t, p2->second, p1->second);
             spatial_helper.erase(p2->first);
@@ -253,8 +303,22 @@ EliminationOrder::compute_elimination_order(std::string file)
 
             auto evt = predict_collision(p1->second, t, spatial_helper, pois);
             Q.push(evt);
-          } else {
+          } else if (prefer_p2(p1->second, p2->second)) {
             //             result.emplace_back(coll_t, std::move(p1->second));
+            result.emplace_back(t, p1->second, p2->second);
+            spatial_helper.erase(p1->first);
+            pois.erase(p1);
+
+            auto evt = predict_collision(p2->second, t, spatial_helper, pois);
+            Q.push(evt);
+          } else if (use_heuristic(p1->second, p2->second)) {
+            result.emplace_back(t, p2->second, p1->second);
+            spatial_helper.erase(p2->first);
+            pois.erase(p2);
+
+            auto evt = predict_collision(p1->second, t, spatial_helper, pois);
+            Q.push(evt);
+          } else {
             result.emplace_back(t, p1->second, p2->second);
             spatial_helper.erase(p1->first);
             pois.erase(p1);
