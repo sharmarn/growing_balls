@@ -21,6 +21,7 @@
 #define ELIMINATIONORDER_H
 
 #include <algorithm>
+#include <cstdlib>
 #include <limits>
 #include <queue>
 #include <stdint.h>
@@ -39,10 +40,11 @@ enum class Heuristic : int32_t
 {
   HEURISTIC_DEFAULT = 0,
   HEURISTIC_RADIUS = 1,
-  HEURISTIC_RANDOM = 2
+  HEURISTIC_OSM_ID = 2,
+  HEURISTIC_RANDOM = 3
 };
 
-Heuristic choose_heuristic = Heuristic::HEURISTIC_DEFAULT;
+Heuristic choose_heuristic = Heuristic::HEURISTIC_OSM_ID;
 
 bool
 prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
@@ -67,10 +69,28 @@ prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
 
 // Always prefer the centre with greater osm ID.
 bool
+prefer_through_osm_id(const growing_balls::PointOfInterest& p1,
+                      const growing_balls::PointOfInterest& p2)
+{
+  return p1.get_osm_id() > p2.get_osm_id();
+};
+
+int
+flip()
+{
+  return rand() % 2;
+}
+
+bool
 prefer_randomly(const growing_balls::PointOfInterest& p1,
                 const growing_balls::PointOfInterest& p2)
 {
-  return p1.get_osm_id() > p2.get_osm_id();
+  int coin = 0;
+  coin = flip();
+  if (coin == 0) {
+    return true;
+  } else
+    return false;
 };
 
 bool
@@ -81,6 +101,10 @@ use_heuristic(const growing_balls::PointOfInterest& p1,
 
   if (choose_heuristic == Heuristic::HEURISTIC_RADIUS) {
     return prefer_p1_through_radius(p1, p2);
+  }
+
+  else if (choose_heuristic == Heuristic::HEURISTIC_OSM_ID) {
+    return prefer_through_osm_id(p1, p2);
   }
 
   else if (choose_heuristic == Heuristic::HEURISTIC_RANDOM) {
