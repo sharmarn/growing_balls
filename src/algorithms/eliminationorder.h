@@ -36,15 +36,15 @@
 
 namespace {
 
-enum class Heuristic : int32_t
+enum class Heuristic
 {
-  HEURISTIC_DEFAULT = 0,
-  HEURISTIC_RADIUS = 1,
-  HEURISTIC_OSM_ID = 2,
-  HEURISTIC_RANDOM = 3
+  DEFAULT,
+  HEURISTIC_RADIUS,
+  HEURISTIC_OSM_ID,
+  HEURISTIC_RANDOM
 };
 
-Heuristic choose_heuristic = Heuristic::HEURISTIC_OSM_ID;
+Heuristic choose_heuristic = Heuristic::HEURISTIC_RADIUS;
 
 bool
 prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
@@ -92,6 +92,44 @@ prefer_randomly(const growing_balls::PointOfInterest& p1,
   } else
     return false;
 };
+
+/* bool
+prefer_in_range(const growing_balls::PointOfInterest& p1,
+                const growing_balls::PointOfInterest& p2,
+                growing_balls::SpatialHelper& sh,
+                const growing_balls::PoiMap& poi_map)
+{
+  auto id_nn_of_p1 = sh.get_nearest_neighbor(p1.get_osm_id());
+
+  auto& nn_p1 = poi_map.at(id_nn_of_p1);
+
+  auto id_nn_of_p2 = sh.get_nearest_neighbor(p2.get_osm_id());
+
+  auto& nn_p2 = poi_map.at(id_nn_of_p2);
+
+  auto distance_p1_nn = distance_in_centimeters(
+    p1.get_lat(), p1.get_lon(), nn_p1.get_lat(), nn_p1.get_lon());
+
+  auto distance_p2_nn = distance_in_centimeters(
+    p2.get_lat(), p2.get_lon(), nn_p2.get_lat(), nn_p2.get_lon());
+
+  int count_p1_in_range_centers = 0;
+  for (auto id : sh.get_in_range(p1.get_osm_id(), 2 * distance_p1_nn)) {
+    count_p1_in_range_centers++;
+  }
+
+  int count_p2_in_range_centers = 0;
+  for (auto id : sh.get_in_range(p2.get_osm_id(), 2 * distance_p2_nn)) {
+    count_p2_in_range_centers++;
+  }
+
+  if (count_p1_in_range_centers < count_p2_in_range_centers) {
+    return true;
+  } else {
+
+    return false;
+  }
+}; */
 
 bool
 use_heuristic(const growing_balls::PointOfInterest& p1,
