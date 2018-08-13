@@ -36,15 +36,19 @@
 
 namespace {
 
+using ID = growing_balls::OsmId;
+using PoiMap = std::unordered_map<ID, growing_balls::PointOfInterest>;
+
 enum class Heuristic
 {
   DEFAULT,
   HEURISTIC_RADIUS,
   HEURISTIC_OSM_ID,
-  HEURISTIC_RANDOM
+  HEURISTIC_RANDOM,
+  HEURISTIC_IN_RANGE
 };
 
-Heuristic choose_heuristic = Heuristic::HEURISTIC_RADIUS;
+Heuristic choose_heuristic = Heuristic::DEFAULT;
 
 bool
 prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
@@ -82,35 +86,34 @@ flip()
 }
 
 bool
-prefer_randomly(const growing_balls::PointOfInterest& p1,
-                const growing_balls::PointOfInterest& p2)
+prefer_randomly()
 {
   int coin = 0;
   coin = flip();
   if (coin == 0) {
     return true;
-  } else
+  }
+
+  else
     return false;
 };
 
-/* bool
+bool
 prefer_in_range(const growing_balls::PointOfInterest& p1,
                 const growing_balls::PointOfInterest& p2,
                 growing_balls::SpatialHelper& sh,
-                const growing_balls::PoiMap& poi_map)
+                const PoiMap& poi_map)
 {
   auto id_nn_of_p1 = sh.get_nearest_neighbor(p1.get_osm_id());
-
   auto& nn_p1 = poi_map.at(id_nn_of_p1);
 
   auto id_nn_of_p2 = sh.get_nearest_neighbor(p2.get_osm_id());
-
   auto& nn_p2 = poi_map.at(id_nn_of_p2);
 
-  auto distance_p1_nn = distance_in_centimeters(
+  auto distance_p1_nn = growing_balls::distance_in_centimeters(
     p1.get_lat(), p1.get_lon(), nn_p1.get_lat(), nn_p1.get_lon());
 
-  auto distance_p2_nn = distance_in_centimeters(
+  auto distance_p2_nn = growing_balls::distance_in_centimeters(
     p2.get_lat(), p2.get_lon(), nn_p2.get_lat(), nn_p2.get_lon());
 
   int count_p1_in_range_centers = 0;
@@ -125,15 +128,23 @@ prefer_in_range(const growing_balls::PointOfInterest& p1,
 
   if (count_p1_in_range_centers < count_p2_in_range_centers) {
     return true;
-  } else {
-
-    return false;
   }
-}; */
+
+  else if (count_p1_in_range_centers == count_p2_in_range_centers) {
+    if (p1.get_osm_id() > p2.get_osm_id()) {
+      return true;
+    }
+
+    else
+      return false;
+  }
+};
 
 bool
 use_heuristic(const growing_balls::PointOfInterest& p1,
-              const growing_balls::PointOfInterest& p2)
+              const growing_balls::PointOfInterest& p2,
+              growing_balls::SpatialHelper& sh,
+              const PoiMap& poi_map)
 {
   assert(p1.get_priority() == p2.get_priority());
 
@@ -146,7 +157,11 @@ use_heuristic(const growing_balls::PointOfInterest& p1,
   }
 
   else if (choose_heuristic == Heuristic::HEURISTIC_RANDOM) {
-    return prefer_randomly(p1, p2);
+    return prefer_randomly();
+  }
+
+  else if (choose_heuristic == Heuristic::HEURISTIC_IN_RANGE) {
+    return prefer_in_range(p1, p2, sh, poi_map);
   }
 
   else {
@@ -156,14 +171,16 @@ use_heuristic(const growing_balls::PointOfInterest& p1,
 
 bool
 prefer_p1(const growing_balls::PointOfInterest& p1,
-          const growing_balls::PointOfInterest& p2)
+          const growing_balls::PointOfInterest& p2,
+          growing_balls::SpatialHelper& sh,
+          const PoiMap& poi_map)
 {
   if (p1.get_priority() > p2.get_priority()) {
     return true;
   }
 
   else if (p1.get_priority() == p2.get_priority()) {
-    return use_heuristic(p1, p2);
+    return use_heuristic(p1, p2, sh, poi_map);
   }
 
   else
@@ -374,7 +391,7 @@ EliminationOrder::compute_elimination_order(std::string file)
         auto p2 = pois.find(current_evt.m_coll2);
         if (p2 != pois.end()) {
           // here p1 and p2 are alive
-          if (prefer_p1(p1->second, p2->second)) {
+          if (prefer_p1(p1->second, p2->second, spatial_helper, pois)) {
             //             result.emplace_back(coll_t, std::move(p2->second));
             result.emplace_back(t, p2->second, p1->second);
             spatial_helper.erase(p2->first);
