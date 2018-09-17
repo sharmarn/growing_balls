@@ -48,8 +48,14 @@ enum class Heuristic
   HEURISTIC_IN_RANGE
 };
 
+// Set a heuristic from above to compute the elimination order with.
 Heuristic choose_heuristic = Heuristic::DEFAULT;
 
+/*
+ * Always prefer the centre with the greater radius.
+ * If the radii of both centres are equal, then choose the centre with the
+ * greater osm ID.
+ */
 bool
 prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
                          const growing_balls::PointOfInterest& p2)
@@ -71,7 +77,7 @@ prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
     return false;
 };
 
-// Always prefer the centre with greater osm ID.
+// Always prefer the centre with the greater osm ID.
 bool
 prefer_through_osm_id(const growing_balls::PointOfInterest& p1,
                       const growing_balls::PointOfInterest& p2)
@@ -85,6 +91,7 @@ flip()
   return rand() % 2;
 }
 
+// Always choose one of the centres randomly.
 bool
 prefer_randomly()
 {
@@ -98,6 +105,11 @@ prefer_randomly()
     return false;
 };
 
+/*
+ * Always prefer the centre with the minimum collision.
+ * If the radii of both centres are equal, then choose the centre with the
+ * greater osm ID.
+ */
 bool
 prefer_in_range(const growing_balls::PointOfInterest& p1,
                 const growing_balls::PointOfInterest& p2,
