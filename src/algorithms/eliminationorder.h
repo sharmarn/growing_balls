@@ -42,10 +42,10 @@ using PoiMap = std::unordered_map<ID, growing_balls::PointOfInterest>;
 enum class Heuristic
 {
   DEFAULT,
-  HEURISTIC_RADIUS,
-  HEURISTIC_OSM_ID,
-  HEURISTIC_RANDOM,
-  HEURISTIC_IN_RANGE
+  RADIUS,
+  OSM_ID,
+  RANDOM,
+  IN_RANGE
 };
 
 // Set a heuristic from above to compute the elimination order with.
@@ -57,8 +57,8 @@ Heuristic choose_heuristic = Heuristic::DEFAULT;
  * greater osm ID.
  */
 bool
-prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
-                         const growing_balls::PointOfInterest& p2)
+prefer_centre_with_greater_radius(const growing_balls::PointOfInterest& p1,
+                                  const growing_balls::PointOfInterest& p2)
 {
   if (p1.get_radius() > p2.get_radius()) {
     return true;
@@ -79,8 +79,8 @@ prefer_p1_through_radius(const growing_balls::PointOfInterest& p1,
 
 // Always prefer the centre with the greater osm ID.
 bool
-prefer_through_osm_id(const growing_balls::PointOfInterest& p1,
-                      const growing_balls::PointOfInterest& p2)
+prefer_centre_with_greater_osm_id(const growing_balls::PointOfInterest& p1,
+                                  const growing_balls::PointOfInterest& p2)
 {
   return p1.get_osm_id() > p2.get_osm_id();
 };
@@ -93,7 +93,7 @@ flip()
 
 // Always choose one of the centres randomly.
 bool
-prefer_randomly()
+prefer_centre_randomly()
 {
   int coin = 0;
   coin = flip();
@@ -111,10 +111,11 @@ prefer_randomly()
  * greater osm ID.
  */
 bool
-prefer_in_range(const growing_balls::PointOfInterest& p1,
-                const growing_balls::PointOfInterest& p2,
-                growing_balls::SpatialHelper& sh,
-                const PoiMap& poi_map)
+prefer_centre_with_lesser_centres_in_range(
+  const growing_balls::PointOfInterest& p1,
+  const growing_balls::PointOfInterest& p2,
+  growing_balls::SpatialHelper& sh,
+  const PoiMap& poi_map)
 {
   auto id_nn_of_p1 = sh.get_nearest_neighbor(p1.get_osm_id());
   auto& nn_p1 = poi_map.at(id_nn_of_p1);
@@ -160,20 +161,20 @@ use_heuristic(const growing_balls::PointOfInterest& p1,
 {
   assert(p1.get_priority() == p2.get_priority());
 
-  if (choose_heuristic == Heuristic::HEURISTIC_RADIUS) {
-    return prefer_p1_through_radius(p1, p2);
+  if (choose_heuristic == Heuristic::RADIUS) {
+    return prefer_centre_with_greater_radius(p1, p2);
   }
 
-  else if (choose_heuristic == Heuristic::HEURISTIC_OSM_ID) {
-    return prefer_through_osm_id(p1, p2);
+  else if (choose_heuristic == Heuristic::OSM_ID) {
+    return prefer_centre_with_greater_osm_id(p1, p2);
   }
 
-  else if (choose_heuristic == Heuristic::HEURISTIC_RANDOM) {
-    return prefer_randomly();
+  else if (choose_heuristic == Heuristic::RANDOM) {
+    return prefer_centre_randomly();
   }
 
-  else if (choose_heuristic == Heuristic::HEURISTIC_IN_RANGE) {
-    return prefer_in_range(p1, p2, sh, poi_map);
+  else if (choose_heuristic == Heuristic::IN_RANGE) {
+    return prefer_centre_with_lesser_centres_in_range(p1, p2, sh, poi_map);
   }
 
   else {
