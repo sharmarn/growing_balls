@@ -49,7 +49,7 @@ enum class Heuristic
 };
 
 // Set a heuristic from above to compute the elimination order with.
-Heuristic choose_heuristic = Heuristic::DEFAULT;
+Heuristic choose_heuristic = Heuristic::IN_RANGE;
 
 /*
  * Always prefer the center with the greater radius.
