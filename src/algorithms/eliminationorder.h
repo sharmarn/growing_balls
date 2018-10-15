@@ -49,15 +49,15 @@ enum class Heuristic
 };
 
 // Set a heuristic from above to compute the elimination order with.
-Heuristic choose_heuristic = Heuristic::DEFAULT;
+Heuristic choose_heuristic = Heuristic::RADIUS;
 
 /*
- * Always prefer the centre with the greater radius.
- * If the radii of both centres are equal, then choose the centre with the
+ * Always prefer the center with the greater radius.
+ * If the radii of both centers are equal, then choose the center with the
  * greater osm ID.
  */
 bool
-prefer_centre_with_greater_radius(const growing_balls::PointOfInterest& p1,
+prefer_center_with_greater_radius(const growing_balls::PointOfInterest& p1,
                                   const growing_balls::PointOfInterest& p2)
 {
   if (p1.get_radius() > p2.get_radius()) {
@@ -77,9 +77,9 @@ prefer_centre_with_greater_radius(const growing_balls::PointOfInterest& p1,
     return false;
 };
 
-// Always prefer the centre with the greater osm ID.
+// Always prefer the center with the greater osm ID.
 bool
-prefer_centre_with_greater_osm_id(const growing_balls::PointOfInterest& p1,
+prefer_center_with_greater_osm_id(const growing_balls::PointOfInterest& p1,
                                   const growing_balls::PointOfInterest& p2)
 {
   return p1.get_osm_id() > p2.get_osm_id();
@@ -91,9 +91,9 @@ flip()
   return rand() % 2;
 }
 
-// Always choose one of the centres randomly.
+// Always choose one of the centers randomly.
 bool
-prefer_centre_randomly()
+prefer_center_randomly()
 {
   int coin = 0;
   coin = flip();
@@ -106,12 +106,12 @@ prefer_centre_randomly()
 };
 
 /*
- * Always prefer the centre with the minimum collision.
- * If the radii of both centres are equal, then choose the centre with the
+ * Always prefer the center with the minimum collision.
+ * If the radii of both centers are equal, then choose the center with the
  * greater osm ID.
  */
 bool
-prefer_centre_with_lesser_centres_in_range(
+prefer_center_with_lesser_centers_in_range(
   const growing_balls::PointOfInterest& p1,
   const growing_balls::PointOfInterest& p2,
   growing_balls::SpatialHelper& sh,
@@ -162,19 +162,19 @@ use_heuristic(const growing_balls::PointOfInterest& p1,
   assert(p1.get_priority() == p2.get_priority());
 
   if (choose_heuristic == Heuristic::RADIUS) {
-    return prefer_centre_with_greater_radius(p1, p2);
+    return prefer_center_with_greater_radius(p1, p2);
   }
 
   else if (choose_heuristic == Heuristic::OSM_ID) {
-    return prefer_centre_with_greater_osm_id(p1, p2);
+    return prefer_center_with_greater_osm_id(p1, p2);
   }
 
   else if (choose_heuristic == Heuristic::RANDOM) {
-    return prefer_centre_randomly();
+    return prefer_center_randomly();
   }
 
   else if (choose_heuristic == Heuristic::IN_RANGE) {
-    return prefer_centre_with_lesser_centres_in_range(p1, p2, sh, poi_map);
+    return prefer_center_with_lesser_centers_in_range(p1, p2, sh, poi_map);
   }
 
   else {
