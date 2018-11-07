@@ -43,24 +43,34 @@ enum class Heuristic
 {
   DEFAULT,
   RADIUS,
-  OSM_ID,
   RANDOM,
   IN_RANGE
 };
 
 // Set a heuristic from above to compute the elimination order with.
-Heuristic choose_heuristic = Heuristic::DEFAULT;
+Heuristic choose_heuristic = Heuristic::IN_RANGE;
 
 /*
- * Always prefer the center with the greater radius.
- * If the radii of both centers are equal, then choose the center with the
- * greater osm ID.
+ * This function is called, when the non-heuristical approach 'DEFAULT' is set.
+ * Always prefer the center with the greater OSM ID.
  */
 bool
-prefer_center_with_greater_radius(const growing_balls::PointOfInterest& p1,
+prefer_center_with_greater_osm_id(const growing_balls::PointOfInterest& p1,
                                   const growing_balls::PointOfInterest& p2)
 {
-  if (p1.get_radius() > p2.get_radius()) {
+  return p1.get_osm_id() > p2.get_osm_id();
+};
+
+/*
+ * Always prefer the center with the lesser radius.
+ * If the radii of both centers are equal, then choose the center with the
+ * greater OSM ID.
+ */
+bool
+prefer_center_with_lesser_radius(const growing_balls::PointOfInterest& p1,
+                                 const growing_balls::PointOfInterest& p2)
+{
+  if (p1.get_radius() < p2.get_radius()) {
     return true;
   }
 
@@ -77,19 +87,11 @@ prefer_center_with_greater_radius(const growing_balls::PointOfInterest& p1,
     return false;
 };
 
-// Always prefer the center with the greater osm ID.
-bool
-prefer_center_with_greater_osm_id(const growing_balls::PointOfInterest& p1,
-                                  const growing_balls::PointOfInterest& p2)
-{
-  return p1.get_osm_id() > p2.get_osm_id();
-};
-
 int
 flip()
 {
   return rand() % 2;
-}
+};
 
 // Always choose one of the centers randomly.
 bool
@@ -106,9 +108,9 @@ prefer_center_randomly()
 };
 
 /*
- * Always prefer the center with the minimum collision.
- * If the radii of both centers are equal, then choose the center with the
- * greater osm ID.
+ * Always prefer the center, that has lesser centers in range 2*|c_i nn|,
+ * with nn being the nearest neighbor. If the radii of both centers are equal,
+ * then choose the center with the greater osm ID.
  */
 bool
 prefer_center_with_lesser_centers_in_range(
@@ -151,6 +153,9 @@ prefer_center_with_lesser_centers_in_range(
     else
       return false;
   }
+
+  else
+    return false;
 };
 
 bool
@@ -162,24 +167,19 @@ use_heuristic(const growing_balls::PointOfInterest& p1,
   assert(p1.get_priority() == p2.get_priority());
 
   if (choose_heuristic == Heuristic::RADIUS) {
-    return prefer_center_with_greater_radius(p1, p2);
-  }
-
-  else if (choose_heuristic == Heuristic::OSM_ID) {
-    return prefer_center_with_greater_osm_id(p1, p2);
-  }
-
-  else if (choose_heuristic == Heuristic::RANDOM) {
-    return prefer_center_randomly();
+    return prefer_center_with_lesser_radius(p1, p2);
   }
 
   else if (choose_heuristic == Heuristic::IN_RANGE) {
     return prefer_center_with_lesser_centers_in_range(p1, p2, sh, poi_map);
   }
 
-  else {
-    return false;
+  else if (choose_heuristic == Heuristic::RANDOM) {
+    return prefer_center_randomly();
   }
+
+  else
+    return prefer_center_with_greater_osm_id(p1, p2);
 };
 
 bool
