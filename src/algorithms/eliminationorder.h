@@ -58,17 +58,22 @@ bool
 prefer_center_with_greater_osm_id(const growing_balls::PointOfInterest& p1,
                                   const growing_balls::PointOfInterest& p2)
 {
-  return p1.get_osm_id() > p2.get_osm_id();
+  if (p1.get_osm_id() > p2.get_osm_id()) {
+    return true;
+  }
+
+  else
+    return false;
 };
 
 /*
- * Always prefer the center with the lesser radius.
+ * Always prefer the center with the smaller radius.
  * If the radii of both centers are equal, then choose the center with the
  * greater OSM ID.
  */
 bool
-prefer_center_with_lesser_radius(const growing_balls::PointOfInterest& p1,
-                                 const growing_balls::PointOfInterest& p2)
+prefer_center_with_smaller_radius(const growing_balls::PointOfInterest& p1,
+                                  const growing_balls::PointOfInterest& p2)
 {
   if (p1.get_radius() < p2.get_radius()) {
     return true;
@@ -109,8 +114,8 @@ prefer_center_randomly()
 
 /*
  * Always prefer the center, that has lesser centers in range 2*|c_i nn|,
- * with nn being the nearest neighbor. If the radii of both centers are equal,
- * then choose the center with the greater osm ID.
+ * with nn being the nearest neighbor. If both centers have the equal amount of
+ * centers in range, then choose the center with the greater osm ID.
  */
 bool
 prefer_center_with_lesser_centers_in_range(
@@ -133,12 +138,18 @@ prefer_center_with_lesser_centers_in_range(
 
   int count_p1_in_range_centers = 0;
   for (auto id : sh.get_in_range(p1.get_osm_id(), 2 * distance_p1_nn)) {
-    count_p1_in_range_centers++;
+    auto& p1_in_range = poi_map.at(id);
+    if (p1.get_priority() >= p1_in_range.get_priority()) {
+      count_p1_in_range_centers++;
+    }
   }
 
   int count_p2_in_range_centers = 0;
   for (auto id : sh.get_in_range(p2.get_osm_id(), 2 * distance_p2_nn)) {
-    count_p2_in_range_centers++;
+    auto& p2_in_range = poi_map.at(id);
+    if (p2.get_priority() >= p2_in_range.get_priority()) {
+      count_p2_in_range_centers++;
+    }
   }
 
   if (count_p1_in_range_centers < count_p2_in_range_centers) {
@@ -167,7 +178,7 @@ use_heuristic(const growing_balls::PointOfInterest& p1,
   assert(p1.get_priority() == p2.get_priority());
 
   if (choose_heuristic == Heuristic::RADIUS) {
-    return prefer_center_with_lesser_radius(p1, p2);
+    return prefer_center_with_smaller_radius(p1, p2);
   }
 
   else if (choose_heuristic == Heuristic::IN_RANGE) {

@@ -12,7 +12,6 @@ int
 main(int argc, char** argv)
 {
   int numberOfFiles = 17;
-
   for (int i = 1; i <= numberOfFiles; i++) {
     if (argc < 2) {
       std::cout << "Please provide a valid .complete.txt input file!"
